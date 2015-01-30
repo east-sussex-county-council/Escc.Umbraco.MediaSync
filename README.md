@@ -38,6 +38,12 @@ Allowed values:
 * true: media node is moved to the recycle bin or deleted if the related content node is moved to the recycle bin or deleted.
 * false: The delete or move to the recycle bin of the content node has no effect to the related media node. This will continue exist.
 
+#### checkForMissingRelations
+
+If you install Escc.Umbraco.MediaSync on a site which already has content, the matching related media nodes may be missing. Setting this property to `true` checks for these and puts them in place if they're missing any time a save, copy or move is attempted. To force the creation of a media library for an existing page which doesn't have one, simply save the page. 
+
+If you are installing on a new site without any content you can set this to `false` to avoid the extra queries this involves.
+
 ### Excluding content from synchronisation
 
 Pages can be added to a blacklist in `uMediaSync.config`:

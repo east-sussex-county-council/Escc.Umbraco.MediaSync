@@ -38,9 +38,7 @@ namespace Escc.Umbraco.MediaSync
             // Rename Media-NodeName
 
             if (ReadSetting("renameMedia").ToString() == "true")
-            {
-               EnsureRelationTypeExists();
-                
+            {                
                 foreach (var node in e.SavedEntities)
                 {
                     if (node.HasIdentity == true)
@@ -78,31 +76,82 @@ namespace Escc.Umbraco.MediaSync
 
                 if (isNew)
                 {
-                    // Create Media-Node and set Relation
-                    int contentRoot = String.IsNullOrWhiteSpace(ReadSetting("syncFromContentRootNode").ToString()) ? -1 : Convert.ToInt32(ReadSetting("syncFromContentRootNode").ToString());
-                    int mediaParent = String.IsNullOrWhiteSpace(ReadSetting("syncToMediaRootNode").ToString()) ? -1 : Convert.ToInt32(ReadSetting("syncToMediaRootNode").ToString());
-
-                    IContent contentRootNode = uMediaSyncHelper.contentService.GetById(contentRoot);
-
-                    if (contentRoot == -1 || node.Path.Contains(contentRootNode.Path))
+                    CreateRelatedMediaNode(node);
+                }
+                else
+                {
+                    if (Boolean.Parse(ReadSetting("checkForMissingRelations")))
                     {
-                        if (syncNode(node) == true)
-                        {
-
-                            if (node.ParentId != contentRoot)
-                            {
-                                IContent contentParent = uMediaSyncHelper.contentService.GetById(node.ParentId);
-                                IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
-                                IRelation uMediaSyncRelation = uMediaSyncRelations.Where(r => r.ParentId == node.ParentId).FirstOrDefault();
-                                mediaParent = uMediaSyncRelation.ChildId;
-                            }
-
-                            IMedia media = uMediaSyncHelper.mediaService.CreateMedia(node.Name, mediaParent, "Folder", uMediaSyncHelper.userId);
-                            uMediaSyncHelper.mediaService.Save(media);
-                            IRelation relation = uMediaSyncHelper.relationService.Relate(node, media, "uMediaSyncRelation");
-                            uMediaSyncHelper.relationService.Save(relation);
-                        }
+                        EnsureRelatedMediaNodeExists(node);
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks that the given content node has a relation to a media node, and creates a related media node if not
+        /// </summary>
+        /// <param name="node">The content node.</param>
+        private void EnsureRelatedMediaNodeExists(IContent node)
+        {
+            int contentRoot = String.IsNullOrWhiteSpace(ReadSetting("syncFromContentRootNode")) ? -1 : Convert.ToInt32(ReadSetting("syncFromContentRootNode"));
+
+            IContent contentRootNode = uMediaSyncHelper.contentService.GetById(contentRoot);
+
+            if (contentRoot == -1 || node.Path.Contains(contentRootNode.Path))
+            {
+                if (syncNode(node) == true)
+                {
+                    IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
+                    IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault(r => r.ParentId == node.Id);
+                    
+                    if (uMediaSyncRelation == null)
+                    {
+                        CreateRelatedMediaNode(node);
+                    }
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Creates a media node to match a content node, and relates them.
+        /// </summary>
+        /// <param name="node">The content node.</param>
+        private void CreateRelatedMediaNode(IContent node)
+        {
+            int contentRoot = String.IsNullOrWhiteSpace(ReadSetting("syncFromContentRootNode")) ? -1 : Convert.ToInt32(ReadSetting("syncFromContentRootNode"));
+            int mediaParent = String.IsNullOrWhiteSpace(ReadSetting("syncToMediaRootNode")) ? -1 : Convert.ToInt32(ReadSetting("syncToMediaRootNode"));
+
+            IContent contentRootNode = uMediaSyncHelper.contentService.GetById(contentRoot);
+
+            if (contentRoot == -1 || node.Path.Contains(contentRootNode.Path))
+            {
+                if (syncNode(node) == true)
+                {
+                    if (node.ParentId != contentRoot)
+                    {
+                        IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
+                        IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault(r => r.ParentId == node.ParentId);
+
+                        if (uMediaSyncRelation == null && Boolean.Parse(ReadSetting("checkForMissingRelations")))
+                        {
+                            // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
+                            CreateRelatedMediaNode(node.Parent());
+
+                            // get the new relation for the parent
+                            uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
+                            uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault(r => r.ParentId == node.ParentId);
+                        }
+
+                        mediaParent = uMediaSyncRelation.ChildId;
+                    }
+
+                    IMedia media = uMediaSyncHelper.mediaService.CreateMedia(node.Name, mediaParent, "Folder", uMediaSyncHelper.userId);
+                    uMediaSyncHelper.mediaService.Save(media);
+                    EnsureRelationTypeExists();
+                    IRelation relation = uMediaSyncHelper.relationService.Relate(node, media, "uMediaSyncRelation");
+                    uMediaSyncHelper.relationService.Save(relation);
                 }
             }
         }
@@ -122,8 +171,6 @@ namespace Escc.Umbraco.MediaSync
         {
             if (HttpContext.Current.Request.Cookies["uMediaSyncNotMove_" + e.Entity.ParentId] == null)
             {
-                IContent contentParent = uMediaSyncHelper.contentService.GetById(e.Entity.ParentId);
-
                 IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
                 IRelation uMediaSyncRelation = uMediaSyncRelations.Where(r => r.ParentId == e.Entity.Id).FirstOrDefault();
                 if (uMediaSyncRelation != null)
@@ -131,6 +178,17 @@ namespace Escc.Umbraco.MediaSync
                     int mediaId = uMediaSyncRelation.ChildId;
 
                     IRelation uMediaSyncRelationNew = uMediaSyncRelations.Where(r => r.ParentId == e.Entity.ParentId).FirstOrDefault();
+
+                    if (uMediaSyncRelationNew == null && Boolean.Parse(ReadSetting("checkForMissingRelations")))
+                    {
+                        // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
+                        CreateRelatedMediaNode(e.Entity.Parent());
+
+                        // get the new relation for the parent
+                        uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
+                        uMediaSyncRelationNew = uMediaSyncRelations.FirstOrDefault(r => r.ParentId == e.Entity.ParentId);
+                    } 
+
                     if (uMediaSyncRelationNew != null)
                     {
                         int mediaParentNewId = uMediaSyncRelationNew.ChildId;
@@ -154,13 +212,16 @@ namespace Escc.Umbraco.MediaSync
         {
             if (syncNode(e.Original))
             {
+                if (Boolean.Parse(ReadSetting("checkForMissingRelations")))
+                {
+                    EnsureRelatedMediaNodeExists(e.Original);
+                }
+
                 IContent content1 = uMediaSyncHelper.contentService.GetById(e.Original.Id);
                 IContent content2 = uMediaSyncHelper.contentService.GetById(e.Copy.Id);
 
-                IContent content2Parent = uMediaSyncHelper.contentService.GetById(e.Copy.ParentId);
-
                 IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
-                IRelation uMediaSyncRelation1 = uMediaSyncRelations.Where(r => r.ParentId == content1.Id).FirstOrDefault();
+                IRelation uMediaSyncRelation1 = uMediaSyncRelations.FirstOrDefault(r => r.ParentId == content1.Id);
                 if (uMediaSyncRelation1 != null)
                 {
                     int media1Id = uMediaSyncRelation1.ChildId;
@@ -168,7 +229,19 @@ namespace Escc.Umbraco.MediaSync
                     IMedia media1 = uMediaSyncHelper.mediaService.GetById(media1Id);
 
 
-                    IRelation uMediaSyncRelation2Parent = uMediaSyncRelations.Where(r => r.ParentId == content2.ParentId).FirstOrDefault();
+                    IRelation uMediaSyncRelation2Parent = uMediaSyncRelations.FirstOrDefault(r => r.ParentId == content2.ParentId);
+
+                    if (uMediaSyncRelation2Parent == null && Boolean.Parse(ReadSetting("checkForMissingRelations")))
+                    {
+                        // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
+                        CreateRelatedMediaNode(content2.Parent());
+
+                        // get the new relation for the parent
+                        uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
+                        uMediaSyncRelation2Parent = uMediaSyncRelations.FirstOrDefault(r => r.ParentId == content2.ParentId);
+                    } 
+
+                    
                     if (uMediaSyncRelation2Parent != null)
                     {
                         int media2ParentId = uMediaSyncRelation2Parent.ChildId;
