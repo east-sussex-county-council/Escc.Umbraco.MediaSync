@@ -1,6 +1,11 @@
 # Escc.Umbraco.MediaSync
 
-This is [uMediaSync](http://our.umbraco.org/projects/backoffice-extensions/umediasync) for Umbraco 7, repackaged as a NuGet package rather than an Umbraco package. We use [NuBuild](https://github.com/bspell1/NuBuild) to make creating the NuGet package really easy, and [reference our private feed using a nuget.config file](http://blog.davidebbo.com/2014/01/the-right-way-to-restore-nuget-packages.html).
+This is [uMediaSync](http://our.umbraco.org/projects/backoffice-extensions/umediasync) for Umbraco 7 by Sören Deger, repackaged as a NuGet package rather than an Umbraco package. We use [NuBuild](https://github.com/bspell1/NuBuild) to make creating the NuGet package really easy, and [reference our private feed using a nuget.config file](http://blog.davidebbo.com/2014/01/the-right-way-to-restore-nuget-packages.html).
+
+In addition to the features of uMediaSync, this adds:
+
+* Create media folders retrospectively for pages which existed before Escc.Umbraco.MediaSync was installed
+* Delete the related media folders from the media recycle bin when the content recycle bin is emptied
 
 ## uMediaSync
 

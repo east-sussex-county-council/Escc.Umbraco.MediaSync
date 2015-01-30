@@ -31,6 +31,7 @@ namespace Escc.Umbraco.MediaSync
             ContentService.Copied += ContentService_Copied;
             ContentService.Trashed += ContentService_Trashed;
             ContentService.Deleting += ContentService_Deleting;
+            ContentService.EmptyingRecycleBin += ContentService_EmptyingRecycleBin;
         }
 
         void ContentService_Saving(IContentService sender, global::Umbraco.Core.Events.SaveEventArgs<IContent> e)
@@ -265,28 +266,33 @@ namespace Escc.Umbraco.MediaSync
 
         void ContentService_Deleting(IContentService sender, global::Umbraco.Core.Events.DeleteEventArgs<IContent> e)
         {
-            if (ReadSetting("deleteMedia").ToString() == "true")
+            if (Boolean.Parse(ReadSetting("deleteMedia")))
             {
                 foreach (var node in e.DeletedEntities)
                 {
                     if (syncNode(node))
                     {
-                        IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
-                        IRelation uMediaSyncRelation = uMediaSyncRelations.Where(r => r.ParentId == node.Id).FirstOrDefault();
-                        if (uMediaSyncRelation != null)
-                        {
-                            int mediaId = uMediaSyncRelation.ChildId;
-                            IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
-                            uMediaSyncHelper.mediaService.Delete(media, uMediaSyncHelper.userId);
-                        }
+                        DeleteRelatedMediaNode(node.Id);
                     }
                 }
             }
         }
 
+        private static void DeleteRelatedMediaNode(int nodeId)
+        {
+            IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncRelation");
+            IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault(r => r.ParentId == nodeId);
+            if (uMediaSyncRelation != null)
+            {
+                int mediaId = uMediaSyncRelation.ChildId;
+                IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
+                uMediaSyncHelper.mediaService.Delete(media, uMediaSyncHelper.userId);
+            }
+        }
+
         void ContentService_Trashed(IContentService sender, global::Umbraco.Core.Events.MoveEventArgs<IContent> e)
         {
-            if (ReadSetting("deleteMedia").ToString() == "true")
+            if (Boolean.Parse(ReadSetting("deleteMedia")))
             {
                 if (syncNode(e.Entity))
                 {
@@ -302,7 +308,18 @@ namespace Escc.Umbraco.MediaSync
             }
         }
 
-       
+
+        void ContentService_EmptyingRecycleBin(IContentService sender, global::Umbraco.Core.Events.RecycleBinEventArgs e)
+        {
+            if (!Boolean.Parse(ReadSetting("deleteMedia"))) return;
+            
+            if (!e.IsContentRecycleBin) return;
+
+            foreach (var contentNodeId in e.Ids)
+            {
+                DeleteRelatedMediaNode(contentNodeId);
+            }
+        }
 
         
 
