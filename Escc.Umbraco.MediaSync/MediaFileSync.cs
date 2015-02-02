@@ -18,6 +18,7 @@ namespace Escc.Umbraco.MediaSync
     public class MediaFileSync : ApplicationEventHandler
     {
         private readonly IMediaSyncConfigurationProvider _config = new XmlConfigurationProvider();
+        private IEnumerable<IRelatedMediaIdProvider> _mediaIdProviders;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MediaFileSync"/> class.
@@ -39,6 +40,16 @@ namespace Escc.Umbraco.MediaSync
             if (_config.ReadBooleanSetting("moveMediaFilesStillInUse"))
             {
                 EnsureRelationTypeExists();
+
+                if (_mediaIdProviders == null)
+                {
+                    _mediaIdProviders = new List<IRelatedMediaIdProvider>() {
+                        new MediaPickerIdProvider(_config), 
+                        new HtmlMediaIdProvider(_config), 
+                        new RelatedLinksMediaIdProvider(_config),
+                        new UrlMediaIdProvider(_config)
+                    };
+                }
 
                 foreach (var node in e.SavedEntities)
                 {
@@ -68,7 +79,7 @@ namespace Escc.Umbraco.MediaSync
             }
         }
 
-        private static void UpdateRelationsBetweenContentAndMediaItems(IContent node)
+        private void UpdateRelationsBetweenContentAndMediaItems(IContent node)
         {
             // Tried using ICanBeDirty and IRememberBeingDirty using the pattern from 
             // http://stackoverflow.com/questions/24035586/umbraco-memberservice-saved-event-trigger-during-login-and-get-operations
@@ -84,14 +95,15 @@ namespace Escc.Umbraco.MediaSync
 
             foreach (var propertyType in node.PropertyTypes)
             {
-                if (propertyType.PropertyEditorAlias == "Umbraco.MediaPicker")
+                foreach (var provider in _mediaIdProviders)
                 {
-                    var mediaProperty = node.Properties[propertyType.Alias];
+                    if (!provider.CanReadPropertyType(propertyType.PropertyEditorAlias)) continue;
 
-                    if (mediaProperty.Value != null && !String.IsNullOrEmpty(mediaProperty.Value.ToString()))
+                    var mediaIds = provider.ReadProperty(node.Properties[propertyType.Alias]);
+                    foreach (var mediaNodeId in mediaIds)
                     {
-                        // We've got a media picker linking to a node. Has there already been a link to the same file on this page?
-                        var mediaNodeId = Int32.Parse(mediaProperty.Value.ToString());
+                        // We've got a property linking to a media node. 
+                        // Has there already been a link to the same media node on this page?
                         if (!relatedMediaIdsInCurrentVersion.Contains(mediaNodeId))
                         {
                             relatedMediaIdsInCurrentVersion.Add(mediaNodeId);
@@ -108,6 +120,7 @@ namespace Escc.Umbraco.MediaSync
                             relatedMediaIds.Add(mediaNodeId);
                         }
                     }
+                    
                 }
             }
 
