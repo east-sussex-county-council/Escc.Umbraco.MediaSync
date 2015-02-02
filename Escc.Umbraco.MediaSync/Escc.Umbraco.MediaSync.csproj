@@ -187,6 +187,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IMediaSyncConfigurationProvider.cs" />
+    <Compile Include="MediaFileSync.cs" />
+    <Compile Include="MediaFolderService.cs" />
+    <Compile Include="XmlConfigurationProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="uMediaSync.cs" />
     <Compile Include="uMediaSyncHelper.cs" />

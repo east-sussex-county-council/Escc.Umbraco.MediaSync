@@ -6,6 +6,7 @@ In addition to the features of uMediaSync, this adds:
 
 * Create media folders retrospectively for pages which existed before Escc.Umbraco.MediaSync was installed
 * Delete the related media folders from the media recycle bin when the content recycle bin is emptied
+* When a page is deleted, and its media folder contains files that are also used by other pages, those files are moved to the media folder for one of the other pages
 
 ## uMediaSync
 
@@ -48,6 +49,13 @@ Allowed values:
 If you install Escc.Umbraco.MediaSync on a site which already has content, the matching related media nodes may be missing. Setting this property to `true` checks for these and puts them in place if they're missing any time a save, copy or move is attempted. To force the creation of a media library for an existing page which doesn't have one, simply save the page. 
 
 If you are installing on a new site without any content you can set this to `false` to avoid the extra queries this involves.
+
+#### moveMediaFilesStillInUse
+
+Allowed values:
+
+* true: When a content node is deleted, and its media node contains files that are also used by other content nodes, those files are moved to the media node for one of the other content nodes.
+* false: When a content node is deleted its related media folder and all its files are deleted.
 
 ### Excluding content from synchronisation
 
