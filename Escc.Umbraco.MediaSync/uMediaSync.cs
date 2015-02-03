@@ -210,7 +210,7 @@ namespace Escc.Umbraco.MediaSync
                         IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, "uMediaSyncRelation");
                         uMediaSyncHelper.relationService.Save(relation);
 
-                        uMediaSyncHelper.contentService.SaveAndPublishWithStatus(content2, uMediaSyncHelper.userId);
+                        uMediaSyncHelper.contentService.Save(content2, uMediaSyncHelper.userId);
                     }
                 }
             }
@@ -284,32 +284,45 @@ namespace Escc.Umbraco.MediaSync
         /// <param name="media2Parent">The destination folder.</param>
         private void CopyMedia(IMedia media1Parent, IMedia media2Parent)
         {
+            var copyFiles = _config.ReadBooleanSetting("copyMediaFiles");
+
             if (uMediaSyncHelper.mediaService.HasChildren(media1Parent.Id))
             {
                 foreach (IMedia item in uMediaSyncHelper.mediaService.GetChildren(media1Parent.Id))
                 {
-                    var mediaItem = uMediaSyncHelper.mediaService.CreateMedia(item.Name, media2Parent, item.ContentType.Alias, uMediaSyncHelper.userId);
-
-                    if (item.HasProperty("umbracoFile") && !String.IsNullOrEmpty(item.GetValue("umbracoFile").ToString()))
+                    IMedia mediaItem = null;
+                    if (copyFiles)
                     {
-                        string mediaFile = item.GetValue("umbracoFile").ToString();
+                        mediaItem = uMediaSyncHelper.mediaService.CreateMedia(item.Name, media2Parent, item.ContentType.Alias, uMediaSyncHelper.userId);
 
-                        string newFile = HttpContext.Current.Server.MapPath(mediaFile);
-
-                        if (System.IO.File.Exists(newFile))
+                        if (item.HasProperty("umbracoFile") && !String.IsNullOrEmpty(item.GetValue("umbracoFile").ToString()))
                         {
-                            string fName = mediaFile.Substring(mediaFile.LastIndexOf('/') + 1);
+                            string mediaFile = item.GetValue("umbracoFile").ToString();
 
-                            FileStream fs = System.IO.File.OpenRead(HttpContext.Current.Server.MapPath(mediaFile));
+                            string newFile = HttpContext.Current.Server.MapPath(mediaFile);
 
-                            mediaItem.SetValue("umbracoFile", fName, fs);
+                            if (System.IO.File.Exists(newFile))
+                            {
+                                string fName = mediaFile.Substring(mediaFile.LastIndexOf('/') + 1);
+
+                                FileStream fs = System.IO.File.OpenRead(HttpContext.Current.Server.MapPath(mediaFile));
+
+                                mediaItem.SetValue("umbracoFile", fName, fs);
+                            }
                         }
+                    } 
+                    else if (item.ContentType.Alias.ToUpperInvariant() == "FOLDER")
+                    {
+                        mediaItem = uMediaSyncHelper.mediaService.CreateMedia(item.Name, media2Parent, item.ContentType.Alias, uMediaSyncHelper.userId);                        
                     }
 
-                    uMediaSyncHelper.mediaService.Save(mediaItem, uMediaSyncHelper.userId);
-                    if (uMediaSyncHelper.mediaService.GetChildren(item.Id).Count() != 0)
+                    if (mediaItem != null)
                     {
-                        CopyMedia(item, mediaItem);
+                        uMediaSyncHelper.mediaService.Save(mediaItem, uMediaSyncHelper.userId);
+                        if (uMediaSyncHelper.mediaService.GetChildren(item.Id).Count() != 0)
+                        {
+                            CopyMedia(item, mediaItem);
+                        }
                     }
                 }
             }
