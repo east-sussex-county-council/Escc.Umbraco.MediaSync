@@ -207,7 +207,6 @@
     <Compile Include="uMediaSyncHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="uMediaSync.config" />
   </ItemGroup>
