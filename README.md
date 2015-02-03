@@ -4,9 +4,11 @@ This is [uMediaSync](http://our.umbraco.org/projects/backoffice-extensions/umedi
 
 In addition to the features of uMediaSync, this adds:
 
-* Create media folders retrospectively for pages which existed before Escc.Umbraco.MediaSync was installed
-* Delete the related media folders from the media recycle bin when the content recycle bin is emptied
-* When a page is deleted, and its media folder contains files that are also used by other pages, those files are moved to the media folder for one of the other pages
+* Create media folders retrospectively for pages which existed before Escc.Umbraco.MediaSync was installed.
+* Delete the related media folders from the media recycle bin when the content recycle bin is emptied.
+* When a page is deleted, and its media folder contains files that are also used by other pages, those files are moved to the media folder for one of the other pages.
+* An extra option to decide, when copying a media folder tree with a page, whether also to copy the files contained in its folders. The copied page still refers to the original files, so it may not be helpful to make copies.
+* When a page is copied, it is not automatically published. This replicates how Umbraco works by default. 
 
 ## uMediaSync
 
@@ -44,6 +46,13 @@ Allowed values:
 * true: media node is moved to the recycle bin or deleted if the related content node is moved to the recycle bin or deleted.
 * false: The delete or move to the recycle bin of the content node has no effect to the related media node. This will continue exist.
 
+#### copyMediaFiles
+
+Allowed values:
+
+* true: when copying a content node and its related media folder tree, copy the files in the media folders too 
+* false: when copying a content node copy its related media folder and subfolders, but without the files they contain
+
 #### checkForMissingRelations
 
 If you install Escc.Umbraco.MediaSync on a site which already has content, the matching related media nodes may be missing. Setting this property to `true` checks for these and puts them in place if they're missing any time a save, copy or move is attempted. To force the creation of a media library for an existing page which doesn't have one, simply save the page. 
@@ -79,3 +88,9 @@ Pages can be added to a blacklist in `uMediaSync.config`:
 #### Document type property: uMediaSyncHide
 
 There is another way to exclude individual single content nodes or even the whole branches from synchronization. Add a property with alias `uMediaSyncHide` of datatype `true/false` to your document type. If you select this property on a content node, this and all nodes under this are automatically excluded from synchronization.
+
+## Known issues
+
+* When you copy a content node which has child nodes, you get multiple copies of the media folder, only one of which has the correct relationship.
+
+* If an image is uploaded using the `File` media type, copying files fails with an error saying it cannot find the `umbracoWidth` property.
