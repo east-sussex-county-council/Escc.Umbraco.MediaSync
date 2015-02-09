@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "`", "Escc.Umbraco.MediaSync\`.csproj", "{C1F5AA94-E582-414C-9C15-87A5FD9AC54D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Escc.Umbraco.MediaSync", "Escc.Umbraco.MediaSync\Escc.Umbraco.MediaSync.csproj", "{C1F5AA94-E582-414C-9C15-87A5FD9AC54D}"
 EndProject
 Project("{E09DD79A-4488-4AB9-8D3F-A7EEE78BF432}") = "Escc.Umbraco.MediaSync.NuGet", "Escc.Umbraco.MediaSync.NuGet\Escc.Umbraco.MediaSync.NuGet.nuproj", "{0B069BF0-AC15-49EA-82CD-F43C7B936E39}"
 EndProject

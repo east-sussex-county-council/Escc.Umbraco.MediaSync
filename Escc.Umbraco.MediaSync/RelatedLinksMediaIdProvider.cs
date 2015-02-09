@@ -28,11 +28,11 @@ namespace Escc.Umbraco.MediaSync
         /// <summary>
         /// Determines whether this instance can read the type of property identified by its property editor alias
         /// </summary>
-        /// <param name="propertyEditorAlias">The property editor alias.</param>
+        /// <param name="propertyType">The property defined on the document type.</param>
         /// <returns></returns>
-        public bool CanReadPropertyType(string propertyEditorAlias)
+        public bool CanReadPropertyType(PropertyType propertyType)
         {
-            return _propertyTypeAlises.Contains(propertyEditorAlias.ToUpperInvariant());
+            return _propertyTypeAlises.Contains(propertyType.PropertyEditorAlias.ToUpperInvariant());
         }
 
         /// <summary>

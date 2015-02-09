@@ -13,11 +13,11 @@ namespace Escc.Umbraco.MediaSync
     interface IRelatedMediaIdProvider
     {
         /// <summary>
-        /// Determines whether this instance can read the type of property identified by its property editor alias
+        /// Determines whether this instance can read the type of property
         /// </summary>
-        /// <param name="propertyEditorAlias">The property editor alias.</param>
+        /// <param name="propertyType">The property defined on the document type.</param>
         /// <returns></returns>
-        bool CanReadPropertyType(string propertyEditorAlias);
+        bool CanReadPropertyType(PropertyType propertyType);
 
         /// <summary>
         /// Reads media ids from the property.

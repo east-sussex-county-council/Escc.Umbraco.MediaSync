@@ -44,7 +44,7 @@ namespace Escc.Umbraco.MediaSync
                 if (_mediaIdProviders == null)
                 {
                     _mediaIdProviders = new List<IRelatedMediaIdProvider>() {
-                        new MediaPickerIdProvider(_config), 
+                        new MediaPickerIdProvider(_config, ApplicationContext.Current.Services.DataTypeService), 
                         new HtmlMediaIdProvider(_config), 
                         new RelatedLinksMediaIdProvider(_config),
                         new UrlMediaIdProvider(_config)
@@ -97,7 +97,7 @@ namespace Escc.Umbraco.MediaSync
             {
                 foreach (var provider in _mediaIdProviders)
                 {
-                    if (!provider.CanReadPropertyType(propertyType.PropertyEditorAlias)) continue;
+                    if (!provider.CanReadPropertyType(propertyType)) continue;
 
                     var mediaIds = provider.ReadProperty(node.Properties[propertyType.Alias]);
                     foreach (var mediaNodeId in mediaIds)

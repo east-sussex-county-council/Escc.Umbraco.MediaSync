@@ -23,8 +23,8 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Escc.Umbraco.MediaSync\`.csproj">
-      <Name>`</Name>
+    <ProjectReference Include="..\Escc.Umbraco.MediaSync\Escc.Umbraco.MediaSync.csproj">
+      <Name>Escc.Umbraco.MediaSync</Name>
       <Project>{c1f5aa94-e582-414c-9c15-87a5fd9ac54d}</Project>
       <Private>True</Private>
     </ProjectReference>
