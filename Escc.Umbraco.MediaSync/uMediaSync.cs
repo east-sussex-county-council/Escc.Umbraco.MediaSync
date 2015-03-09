@@ -73,7 +73,7 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        private void ContentService_Saved(IContentService sender, global::Umbraco.Core.Events.SaveEventArgs<IContent> e)
+        internal void ContentService_Saved(IContentService sender, global::Umbraco.Core.Events.SaveEventArgs<IContent> e)
         {
             foreach (var node in e.SavedEntities)
             {
@@ -115,7 +115,7 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        void ContentService_Moved(IContentService sender, global::Umbraco.Core.Events.MoveEventArgs<IContent> e)
+        internal void ContentService_Moved(IContentService sender, global::Umbraco.Core.Events.MoveEventArgs<IContent> e)
         {
            if (HttpContext.Current.Request.Cookies["uMediaSyncNotMove_" + e.Entity.ParentId] == null)
             {
