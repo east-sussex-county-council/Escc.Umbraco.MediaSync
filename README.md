@@ -8,7 +8,8 @@ In addition to the features of uMediaSync, this adds:
 * Delete the related media folders from the media recycle bin when the content recycle bin is emptied.
 * When a page is deleted, and its media folder contains files that are also used by other pages, those files are moved to the media folder for one of the other pages.
 * An extra option to decide, when copying a media folder tree with a page, whether also to copy the files contained in its folders. The copied page still refers to the original files, so it may not be helpful to make copies.
-* When a page is copied, it is not automatically published. This replicates how Umbraco works by default. 
+* When a page is copied, it is not automatically published. This replicates how Umbraco works by default.
+* When modifying Umbraco content from an Umbraco Web API, supports getting the userId from `uMediaSync.config` instead of using the identify of the current user. 
 
 ## uMediaSync
 
@@ -65,6 +66,10 @@ Allowed values:
 
 * true: When a content node is deleted, and its media node contains files that are also used by other content nodes, those files are moved to the media node for one of the other content nodes.
 * false: When a content node is deleted its related media folder and all its files are deleted.
+
+#### userId
+
+When you're logged in to the Umbraco back office, the current user id is used by Escc.Umbraco.MediaSync to makes its updates to Umbraco. When you call the content service from within an `UmbracoApiController` you don't necessarily have a current user, so the user id from here is used as a fallback option.
 
 ### Excluding content from synchronisation
 

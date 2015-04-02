@@ -11,6 +11,21 @@ namespace Escc.Umbraco.MediaSync
         public static IContentService contentService = ApplicationContext.Current.Services.ContentService;
         public static IMediaService mediaService = ApplicationContext.Current.Services.MediaService;
         public static IRelationService relationService = ApplicationContext.Current.Services.RelationService;
-        public static int userId = Convert.ToInt32(ApplicationContext.Current.Services.UserService.GetByUsername(HttpContext.Current.User.Identity.Name).Id);
+        public static int userId = UserId();
+
+        private static int UserId()
+        {
+            // When logged into the Umbraco back office
+            if (!String.IsNullOrEmpty(HttpContext.Current.User.Identity.Name))
+            {
+                return Convert.ToInt32(ApplicationContext.Current.Services.UserService.GetByUsername(HttpContext.Current.User.Identity.Name).Id);
+            }
+            else
+            {
+                // When called from an API
+                var configured = new XmlConfigurationProvider().ReadIntegerSetting("userId");
+                return configured ?? 0;
+            }
+        }
     }
 }

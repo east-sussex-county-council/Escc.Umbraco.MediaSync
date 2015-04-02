@@ -63,6 +63,26 @@ namespace Escc.Umbraco.MediaSync
         }
 
         /// <summary>
+        /// Reads an integer setting in the <c>general</c> section of the configuration file.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns></returns>
+        public int? ReadIntegerSetting(string key)
+        {
+            try
+            {
+                var configurationValue = ReadSetting(key);
+                if (String.IsNullOrWhiteSpace(configurationValue)) return null;
+                return Int32.Parse(configurationValue);
+            }
+            catch (FormatException)
+            {
+                return null;
+            }
+
+        }
+
+        /// <summary>
         /// Reads property editor aliases compatible with the given media id provider.
         /// </summary>
         /// <param name="mediaIdProvider">The name of the mediaIdProvider element in the configuration file.</param>
