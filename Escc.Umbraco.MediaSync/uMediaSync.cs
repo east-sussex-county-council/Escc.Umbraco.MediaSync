@@ -73,7 +73,7 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        private void ContentService_Saved(IContentService sender, global::Umbraco.Core.Events.SaveEventArgs<IContent> e)
+        void ContentService_Saved(IContentService sender, global::Umbraco.Core.Events.SaveEventArgs<IContent> e)
         {
             foreach (var node in e.SavedEntities)
             {
