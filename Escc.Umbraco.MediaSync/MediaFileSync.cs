@@ -86,8 +86,10 @@ namespace Escc.Umbraco.MediaSync
             // but although it identified the node as dirty, it didn't identify any media picker properties as dirty when they changed.
 
             // Get the relations as they stood before the latest save
-            var uMediaSyncRelations = uMediaSyncHelper.relationService.GetByRelationTypeAlias("uMediaSyncFileRelation");
-            var relationsForPageBeforeSave = uMediaSyncRelations.Where(r => r.ParentId == node.Id).ToList();
+
+            var uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(node.Id).Where(r => r.RelationType.Alias == "uMediaSyncFileRelation");
+            var relationsForPageBeforeSave = uMediaSyncRelations.ToList();
+
             var relatedMediaIds = relationsForPageBeforeSave.Select(r => r.ChildId).ToList();
 
             // Look through the properties to see what relations we have now
