@@ -49,14 +49,21 @@ namespace Escc.Umbraco.MediaSync
                 var relatedLinks = new RelatedLinks(property.Value.ToString());
                 foreach (var relatedLink in relatedLinks)
                 {
-                    var uri = new Uri(relatedLink.Link, UriKind.RelativeOrAbsolute);
-                    string mediaPath = (uri.IsAbsoluteUri ? uri.AbsolutePath : uri.ToString());
-                    if (!mediaPath.StartsWith("/media/", StringComparison.OrdinalIgnoreCase)) continue;
-
-                    var mediaItem = uMediaSyncHelper.mediaService.GetMediaByPath(mediaPath);
-                    if (mediaItem != null)
+                    try
                     {
-                        mediaIds.Add(mediaItem.Id);
+                        var uri = new Uri(relatedLink.Link, UriKind.RelativeOrAbsolute);
+                        string mediaPath = (uri.IsAbsoluteUri ? uri.AbsolutePath : uri.ToString());
+                        if (!mediaPath.StartsWith("/media/", StringComparison.OrdinalIgnoreCase)) continue;
+
+                        var mediaItem = uMediaSyncHelper.mediaService.GetMediaByPath(mediaPath);
+                        if (mediaItem != null)
+                        {
+                            mediaIds.Add(mediaItem.Id);
+                        }
+                    }
+                    catch (UriFormatException)
+                    {
+                        // if someone entered an invalid URL in a related links field, just ignore it and move on
                     }
                 }
                 
