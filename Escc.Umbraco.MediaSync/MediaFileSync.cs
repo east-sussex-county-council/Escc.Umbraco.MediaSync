@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using umbraco.cms.presentation.create.controls;
 using Umbraco.Core;
 using Umbraco.Core.Events;
 using Umbraco.Core.Models;
-using Umbraco.Core.Models.EntityBase;
 using Umbraco.Core.Services;
 
 namespace Escc.Umbraco.MediaSync
@@ -115,8 +111,9 @@ namespace Escc.Umbraco.MediaSync
                         if (!relatedMediaIds.Contains(mediaNodeId))
                         {
                             // If not, create a new relation
-                            var media = uMediaSyncHelper.mediaService.GetById(mediaNodeId);
-                            IRelation relation = uMediaSyncHelper.relationService.Relate(node, media, "uMediaSyncFileRelation");
+                            var mediaItem = uMediaSyncHelper.mediaService.GetById(mediaNodeId);
+
+                            IRelation relation = uMediaSyncHelper.relationService.Relate(node, mediaItem, "uMediaSyncFileRelation");
                             uMediaSyncHelper.relationService.Save(relation);
 
                             relatedMediaIds.Add(mediaNodeId);
@@ -131,6 +128,64 @@ namespace Escc.Umbraco.MediaSync
             foreach (var mediaRelation in relationsForPageBeforeSave)
             {
                 uMediaSyncHelper.relationService.Delete(mediaRelation);
+            }
+
+            // go through each relatedMediaId and check the media files are in the right place for each relation
+            EnsureMediaFileInCorrectFolder(relatedMediaIds, node.Id);
+        }
+
+        /// <summary>
+        /// Ensure media items are in the folder related to the content node, unless it is already in use elsewhere
+        /// </summary>
+        /// <param name="relatedMediaIds">A list of all media items to check</param>
+        /// <param name="contentNodeId">Id of the content node</param>
+        private void EnsureMediaFileInCorrectFolder(IEnumerable<int> relatedMediaIds, int contentNodeId)
+        {
+            // Get the Content to Media Folder relation
+            var contentMediaFolderRelation = uMediaSyncHelper.relationService.GetByParentId(contentNodeId).FirstOrDefault(p => p.RelationType.Alias == "uMediaSyncRelation");
+
+            // Should this ever happen?
+            if (contentMediaFolderRelation == null) return;
+
+            foreach (var mediaId in relatedMediaIds)
+            {
+                // Get all file relations for the Media Item
+                // the datetime field on the umbracoRelation table is not available, so sort by Id to get "oldest first" order.
+                var relations = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == "uMediaSyncFileRelation").OrderBy(o => o.Id);
+                var mediaItemParentFolderId = -1;
+
+                // Check that there is at least one relation
+                if (!relations.Any())
+                {
+                    // no action, leave media where it is
+                    continue;
+                }
+
+                // At least one Relation exists. Get the first / oldest added relation and ensure the media item is in the related media folder
+
+                // Check that the media item for the first relation is in the correct folder
+                var relation = relations.First();
+                var mediaItemParentFolder = uMediaSyncHelper.mediaService.GetParent(relation.ChildId);
+                    
+                // If the media item is at the root, GetParent seems to return null rather than the Media Root node which has an id of -1
+                if (mediaItemParentFolder != null)
+                {
+                    mediaItemParentFolderId = mediaItemParentFolder.Id;
+                }
+
+                // Get the Content to Media Folder relation for the first relation
+                contentMediaFolderRelation = uMediaSyncHelper.relationService.GetByParentId(relation.ParentId).FirstOrDefault(p => p.RelationType.Alias == "uMediaSyncRelation");
+                // Should this ever happen?
+                if (contentMediaFolderRelation == null) continue;
+
+                // Get the Media folder for this Content item
+                var contentMediaFolderId = contentMediaFolderRelation.ChildId;
+
+                if (mediaItemParentFolderId == contentMediaFolderId) continue;
+
+                // Media is in the wrong place, so move it
+                var mediaItem = uMediaSyncHelper.mediaService.GetById(relation.ChildId);
+                uMediaSyncHelper.mediaService.Move(mediaItem, contentMediaFolderId);
             }
         }
 
