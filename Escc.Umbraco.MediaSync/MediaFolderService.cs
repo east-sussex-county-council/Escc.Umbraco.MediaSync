@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Escc.Umbraco.MediaSync.Helpers;
 using Umbraco.Core.Models;
 
 namespace Escc.Umbraco.MediaSync
@@ -23,9 +22,9 @@ namespace Escc.Umbraco.MediaSync
 
             if (contentRoot == -1 || node.Path.Contains(contentRootNode.Path))
             {
-                if (_config.SyncNode(node) == true)
+                if (_config.SyncNode(node))
                 {
-                    IRelation uMediaSyncRelation = uMediaSyncHelper.relationService.GetByParentId(node.Id).FirstOrDefault(r => r.RelationType.Alias == "uMediaSyncRelation");
+                    IRelation uMediaSyncRelation = uMediaSyncHelper.relationService.GetByParentId(node.Id).FirstOrDefault(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
 
                     if (uMediaSyncRelation == null)
                     {
@@ -49,11 +48,11 @@ namespace Escc.Umbraco.MediaSync
 
             if (contentRoot == -1 || node.Path.Contains(contentRootNode.Path))
             {
-                if (_config.SyncNode(node) == true)
+                if (_config.SyncNode(node))
                 {
                     if (node.ParentId != contentRoot)
                     {
-                        IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(node.ParentId).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                        IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(node.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                         IRelation uMediaSyncRelation = uMediaSyncRelationsBefore.FirstOrDefault();
 
                         if (uMediaSyncRelation == null && Boolean.Parse(_config.ReadSetting("checkForMissingRelations")))
@@ -62,17 +61,17 @@ namespace Escc.Umbraco.MediaSync
                             CreateRelatedMediaNode(node.Parent());
 
                             // get the new relation for the parent
-                            IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(node.ParentId).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                            IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(node.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                             uMediaSyncRelation = uMediaSyncRelationsAfter.FirstOrDefault();
                         }
 
-                        mediaParent = uMediaSyncRelation.ChildId;
+                        if (uMediaSyncRelation != null) mediaParent = uMediaSyncRelation.ChildId;
                     }
 
                     IMedia media = uMediaSyncHelper.mediaService.CreateMedia(node.Name, mediaParent, "Folder", uMediaSyncHelper.userId);
                     uMediaSyncHelper.mediaService.Save(media);
                     EnsureRelationTypeExists();
-                    IRelation relation = uMediaSyncHelper.relationService.Relate(node, media, "uMediaSyncRelation");
+                    IRelation relation = uMediaSyncHelper.relationService.Relate(node, media, Constants.FolderRelationTypeAlias);
                     uMediaSyncHelper.relationService.Save(relation);
                 }
             }
@@ -84,7 +83,7 @@ namespace Escc.Umbraco.MediaSync
         /// <param name="nodeId">The node identifier.</param>
         public void DeleteRelatedMediaNode(int nodeId)
         {
-            IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(nodeId).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+            IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(nodeId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
             IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
             if (uMediaSyncRelation != null)
             {
@@ -107,19 +106,19 @@ namespace Escc.Umbraco.MediaSync
 
                 // Check whether another page uses this media item. Could be more than one but just grab the first - we have no way of working out which is the "most appropriate".
                 var anotherPageUsingThisMediaItem = uMediaSyncHelper.relationService.GetByChildId(mediaItem.Id)
-                    .FirstOrDefault(r => r.RelationType.Alias == "uMediaSyncFileRelation" && r.ParentId != contentNodeId);
+                    .FirstOrDefault(r => r.RelationType.Alias == Constants.FileRelationTypeAlias && r.ParentId != contentNodeId);
 
                 if (anotherPageUsingThisMediaItem != null)
                 {
                     // Look up media folder for that page
-                    var mediaFolderForPage = uMediaSyncHelper.relationService.GetByParentId(anotherPageUsingThisMediaItem.ParentId).FirstOrDefault(r => r.RelationType.Alias == "uMediaSyncRelation");
+                    var mediaFolderForPage = uMediaSyncHelper.relationService.GetByParentId(anotherPageUsingThisMediaItem.ParentId).FirstOrDefault(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                     if (mediaFolderForPage == null && _config.ReadBooleanSetting("checkForMissingRelations"))
                     {
                         // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
                         var contentNode = uMediaSyncHelper.contentService.GetById(anotherPageUsingThisMediaItem.ParentId);
                         CreateRelatedMediaNode(contentNode);
 
-                        mediaFolderForPage = uMediaSyncHelper.relationService.GetByParentId(anotherPageUsingThisMediaItem.ParentId).FirstOrDefault(r => r.RelationType.Alias == "uMediaSyncRelation");
+                        mediaFolderForPage = uMediaSyncHelper.relationService.GetByParentId(anotherPageUsingThisMediaItem.ParentId).FirstOrDefault(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                     }
 
                     // Move the media item to the media folder for the other page, so that it doesn't get deleted
@@ -137,9 +136,9 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         private static void EnsureRelationTypeExists()
         {
-            if (uMediaSyncHelper.relationService.GetRelationTypeByAlias("uMediaSyncRelation") == null)
+            if (uMediaSyncHelper.relationService.GetRelationTypeByAlias(Constants.FolderRelationTypeAlias) == null)
             {
-                var relationType = new RelationType(new Guid("b796f64c-1f99-4ffb-b886-4bf4bc011a9c"), new Guid("c66ba18e-eaf3-4cff-8a22-41b16d66a972"), "uMediaSyncRelation", "uMediaSyncRelation");
+                var relationType = new RelationType(new Guid("b796f64c-1f99-4ffb-b886-4bf4bc011a9c"), new Guid("c66ba18e-eaf3-4cff-8a22-41b16d66a972"), Constants.FolderRelationTypeAlias, Constants.FolderRelationTypeAlias);
                 uMediaSyncHelper.relationService.Save(relationType);
             }
         }

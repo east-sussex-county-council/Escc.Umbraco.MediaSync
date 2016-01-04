@@ -1,0 +1,20 @@
+﻿<div ng-controller="Escc.MediaUsageController" ng-model="media">
+
+    <ul class="unstyled" ng-show="media.IsUsed">
+        <li ng-repeat="node in media.Content">
+            <i class="icon-umb-content"></i>
+            <span style="color:grey;" ng-show="node.PathName" ng-if="showPath">{{node.PathName}} &gt; </span>
+            <a href="#/content/content/edit/{{node.Id}}">{{node.Name}}</a>
+            <small ng-show="node.State">({{node.State}})</small>
+        </li>
+    </ul>
+
+    <div ng-hide="media.IsUsed" ng-if="!loading">
+        <p>Media does not appear to be used</p>
+    </div>
+
+    <div ng-show="loading">
+        <p>Searching for content...</p>
+    </div>
+
+</div>

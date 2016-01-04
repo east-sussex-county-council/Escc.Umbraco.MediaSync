@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web;
-using System.Xml;
 using Umbraco.Core;
+using Umbraco.Core.Events;
 using Umbraco.Core.Models;
 using Umbraco.Core.Models.EntityBase;
 using Umbraco.Core.Services;
+using Constants = Escc.Umbraco.MediaSync.Helpers.Constants;
+using File = System.IO.File;
 
 namespace Escc.Umbraco.MediaSync
 {
@@ -36,13 +38,13 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        void ContentService_Saving(IContentService sender, global::Umbraco.Core.Events.SaveEventArgs<IContent> e)
+        void ContentService_Saving(IContentService sender, SaveEventArgs<IContent> e)
         {
             if (_config.ReadBooleanSetting("renameMedia"))
             {                
                 foreach (var node in e.SavedEntities)
                 {
-                    if (node.HasIdentity == true)
+                    if (node.HasIdentity)
                     {
                         if (uMediaSyncHelper.contentService.GetPublishedVersion(node.Id) != null)
                         {
@@ -50,7 +52,7 @@ namespace Escc.Umbraco.MediaSync
 
                             if (oldContent.Name != node.Name)
                             {
-                                IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(node.Id).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                                IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(node.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                                 IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
 
                                 if (uMediaSyncRelation != null)
@@ -73,7 +75,7 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        void ContentService_Saved(IContentService sender, global::Umbraco.Core.Events.SaveEventArgs<IContent> e)
+        void ContentService_Saved(IContentService sender, SaveEventArgs<IContent> e)
         {
             foreach (var node in e.SavedEntities)
             {
@@ -99,7 +101,7 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        void ContentService_Moving(IContentService sender, global::Umbraco.Core.Events.MoveEventArgs<IContent> e)
+        void ContentService_Moving(IContentService sender, MoveEventArgs<IContent> e)
         {
             if (_config.SyncNode(e.Entity) == false)
             {
@@ -115,17 +117,17 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        void ContentService_Moved(IContentService sender, global::Umbraco.Core.Events.MoveEventArgs<IContent> e)
+        void ContentService_Moved(IContentService sender, MoveEventArgs<IContent> e)
         {
            if (HttpContext.Current.Request.Cookies["uMediaSyncNotMove_" + e.Entity.ParentId] == null)
             {
-                IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(e.Entity.Id).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(e.Entity.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                 IRelation uMediaSyncRelation = uMediaSyncRelationsBefore.FirstOrDefault();
                 if (uMediaSyncRelation != null)
                 {
                     int mediaId = uMediaSyncRelation.ChildId;
 
-                    IEnumerable<IRelation> uMediaSyncRelationsNew = uMediaSyncHelper.relationService.GetByParentId(e.Entity.ParentId).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                    IEnumerable<IRelation> uMediaSyncRelationsNew = uMediaSyncHelper.relationService.GetByParentId(e.Entity.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                     IRelation uMediaSyncRelationNew = uMediaSyncRelationsNew.FirstOrDefault();
 
                     if (uMediaSyncRelationNew == null && _config.ReadBooleanSetting("checkForMissingRelations"))
@@ -134,7 +136,7 @@ namespace Escc.Umbraco.MediaSync
                         _folderService.CreateRelatedMediaNode(e.Entity.Parent());
 
                         // get the new relation for the parent
-                        IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(e.Entity.ParentId).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                        IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(e.Entity.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                         uMediaSyncRelationNew = uMediaSyncRelationsAfter.FirstOrDefault();
                     } 
 
@@ -162,7 +164,7 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        void ContentService_Copied(IContentService sender, global::Umbraco.Core.Events.CopyEventArgs<IContent> e)
+        void ContentService_Copied(IContentService sender, CopyEventArgs<IContent> e)
         {
             if (_config.SyncNode(e.Original))
             {
@@ -174,7 +176,7 @@ namespace Escc.Umbraco.MediaSync
                 IContent content1 = uMediaSyncHelper.contentService.GetById(e.Original.Id);
                 IContent content2 = uMediaSyncHelper.contentService.GetById(e.Copy.Id);
 
-                IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(content1.Id).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(content1.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                 IRelation uMediaSyncRelation1 = uMediaSyncRelationsBefore.FirstOrDefault();
                 if (uMediaSyncRelation1 != null)
                 {
@@ -182,7 +184,7 @@ namespace Escc.Umbraco.MediaSync
 
                     IMedia media1 = uMediaSyncHelper.mediaService.GetById(media1Id);
 
-                    IEnumerable<IRelation> uMediaSyncRelations2 = uMediaSyncHelper.relationService.GetByParentId(content2.ParentId).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                    IEnumerable<IRelation> uMediaSyncRelations2 = uMediaSyncHelper.relationService.GetByParentId(content2.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                     IRelation uMediaSyncRelation2Parent = uMediaSyncRelations2.FirstOrDefault();
 
                     if (uMediaSyncRelation2Parent == null && _config.ReadBooleanSetting("checkForMissingRelations"))
@@ -191,7 +193,7 @@ namespace Escc.Umbraco.MediaSync
                         _folderService.CreateRelatedMediaNode(content2.Parent());
 
                         // get the new relation for the parent
-                        IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(content2.ParentId).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                        IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(content2.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                         uMediaSyncRelation2Parent = uMediaSyncRelationsAfter.FirstOrDefault();
                     } 
 
@@ -208,7 +210,7 @@ namespace Escc.Umbraco.MediaSync
 
                         CopyMedia(media1, media2);
 
-                        IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, "uMediaSyncRelation");
+                        IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, Constants.FolderRelationTypeAlias);
                         uMediaSyncHelper.relationService.Save(relation);
 
                         uMediaSyncHelper.contentService.Save(content2, uMediaSyncHelper.userId);
@@ -222,7 +224,7 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        void ContentService_Deleting(IContentService sender, global::Umbraco.Core.Events.DeleteEventArgs<IContent> e)
+        void ContentService_Deleting(IContentService sender, DeleteEventArgs<IContent> e)
         {
             if (_config.ReadBooleanSetting("deleteMedia"))
             {
@@ -242,13 +244,13 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The e.</param>
-        void ContentService_Trashed(IContentService sender, global::Umbraco.Core.Events.MoveEventArgs<IContent> e)
+        void ContentService_Trashed(IContentService sender, MoveEventArgs<IContent> e)
         {
             if (_config.ReadBooleanSetting("deleteMedia"))
             {
                 if (_config.SyncNode(e.Entity))
                 {
-                    IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(e.Entity.Id).Where(r => r.RelationType.Alias == "uMediaSyncRelation");
+                    IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(e.Entity.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                     IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
                     if (uMediaSyncRelation != null)
                     {
@@ -266,7 +268,7 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The <see cref="Umbraco.Core.Events.RecycleBinEventArgs"/> instance containing the event data.</param>
-        void ContentService_EmptyingRecycleBin(IContentService sender, global::Umbraco.Core.Events.RecycleBinEventArgs e)
+        void ContentService_EmptyingRecycleBin(IContentService sender, RecycleBinEventArgs e)
         {
             if (!_config.ReadBooleanSetting("deleteMedia")) return;
             
@@ -302,11 +304,11 @@ namespace Escc.Umbraco.MediaSync
 
                             string newFile = HttpContext.Current.Server.MapPath(mediaFile);
 
-                            if (System.IO.File.Exists(newFile))
+                            if (File.Exists(newFile))
                             {
                                 string fName = mediaFile.Substring(mediaFile.LastIndexOf('/') + 1);
 
-                                FileStream fs = System.IO.File.OpenRead(HttpContext.Current.Server.MapPath(mediaFile));
+                                FileStream fs = File.OpenRead(HttpContext.Current.Server.MapPath(mediaFile));
 
                                 mediaItem.SetValue("umbracoFile", fName, fs);
                             }

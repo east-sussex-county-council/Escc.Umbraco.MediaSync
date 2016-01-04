@@ -1,0 +1,28 @@
+﻿{     
+    propertyEditors: [      
+        {
+			alias: "Escc.MediaContentUsage",
+            name: "Media Content Usage",
+			
+            editor: {
+                view: "/App_Plugins/Escc.Umbraco.DataTypes.MediaUsage/mediausage.html"
+            },
+
+			prevalues: {
+				fields: [
+					{
+                        label: "Show content path",
+						description: "Shows the whole path to the content nodes",
+                        key: "showPath",
+                        view: "boolean"
+                    }
+				]
+			}
+        }
+    ],
+
+    javascript: [
+        '/App_Plugins/Escc.Umbraco.DataTypes.MediaUsage/mediausage.controller.js',
+		'/App_Plugins/Escc.Umbraco.DataTypes.MediaUsage/mediausage.resource.js'
+    ]
+}

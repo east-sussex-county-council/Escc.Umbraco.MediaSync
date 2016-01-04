@@ -5,6 +5,7 @@ using Umbraco.Core;
 using Umbraco.Core.Events;
 using Umbraco.Core.Models;
 using Umbraco.Core.Services;
+using Constants = Escc.Umbraco.MediaSync.Helpers.Constants;
 
 namespace Escc.Umbraco.MediaSync
 {
@@ -65,11 +66,11 @@ namespace Escc.Umbraco.MediaSync
         {
             if (_config.ReadBooleanSetting("moveMediaFilesStillInUse"))
             {
-                var fileRelations = uMediaSyncHelper.relationService.GetByParent(e.Original).Where(r => r.RelationType.Alias == "uMediaSyncFileRelation");
+                var fileRelations = uMediaSyncHelper.relationService.GetByParent(e.Original).Where(r => r.RelationType.Alias == Constants.FileRelationTypeAlias);
                 foreach (var relation in fileRelations)
                 {
                     var media = uMediaSyncHelper.mediaService.GetById(relation.ChildId);
-                    var newRelation = uMediaSyncHelper.relationService.Relate(e.Copy, media, "uMediaSyncFileRelation");
+                    var newRelation = uMediaSyncHelper.relationService.Relate(e.Copy, media, Constants.FileRelationTypeAlias);
                     uMediaSyncHelper.relationService.Save(newRelation);
                 }
             }
@@ -83,7 +84,7 @@ namespace Escc.Umbraco.MediaSync
 
             // Get the relations as they stood before the latest save
 
-            var uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(node.Id).Where(r => r.RelationType.Alias == "uMediaSyncFileRelation");
+            var uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(node.Id).Where(r => r.RelationType.Alias == Constants.FileRelationTypeAlias);
             var relationsForPageBeforeSave = uMediaSyncRelations.ToList();
 
             var relatedMediaIds = relationsForPageBeforeSave.Select(r => r.ChildId).ToList();
@@ -113,7 +114,7 @@ namespace Escc.Umbraco.MediaSync
                             // If not, create a new relation
                             var mediaItem = uMediaSyncHelper.mediaService.GetById(mediaNodeId);
 
-                            IRelation relation = uMediaSyncHelper.relationService.Relate(node, mediaItem, "uMediaSyncFileRelation");
+                            IRelation relation = uMediaSyncHelper.relationService.Relate(node, mediaItem, Constants.FileRelationTypeAlias);
                             uMediaSyncHelper.relationService.Save(relation);
 
                             relatedMediaIds.Add(mediaNodeId);
@@ -142,7 +143,7 @@ namespace Escc.Umbraco.MediaSync
         private void EnsureMediaFileInCorrectFolder(IEnumerable<int> relatedMediaIds, int contentNodeId)
         {
             // Get the Content to Media Folder relation
-            var contentMediaFolderRelation = uMediaSyncHelper.relationService.GetByParentId(contentNodeId).FirstOrDefault(p => p.RelationType.Alias == "uMediaSyncRelation");
+            var contentMediaFolderRelation = uMediaSyncHelper.relationService.GetByParentId(contentNodeId).FirstOrDefault(p => p.RelationType.Alias == Constants.FolderRelationTypeAlias);
 
             // Should this ever happen?
             if (contentMediaFolderRelation == null) return;
@@ -151,7 +152,7 @@ namespace Escc.Umbraco.MediaSync
             {
                 // Get all file relations for the Media Item
                 // the datetime field on the umbracoRelation table is not available, so sort by Id to get "oldest first" order.
-                var relations = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == "uMediaSyncFileRelation").OrderBy(o => o.Id);
+                var relations = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == Constants.FileRelationTypeAlias).OrderBy(o => o.Id);
                 var mediaItemParentFolderId = -1;
 
                 // Check that there is at least one relation
@@ -174,7 +175,7 @@ namespace Escc.Umbraco.MediaSync
                 }
 
                 // Get the Content to Media Folder relation for the first relation
-                contentMediaFolderRelation = uMediaSyncHelper.relationService.GetByParentId(relation.ParentId).FirstOrDefault(p => p.RelationType.Alias == "uMediaSyncRelation");
+                contentMediaFolderRelation = uMediaSyncHelper.relationService.GetByParentId(relation.ParentId).FirstOrDefault(p => p.RelationType.Alias == Constants.FolderRelationTypeAlias);
                 // Should this ever happen?
                 if (contentMediaFolderRelation == null) continue;
 
@@ -194,9 +195,9 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         private void EnsureRelationTypeExists()
         {
-            if (uMediaSyncHelper.relationService.GetRelationTypeByAlias("uMediaSyncFileRelation") == null)
+            if (uMediaSyncHelper.relationService.GetRelationTypeByAlias(Constants.FileRelationTypeAlias) == null)
             {
-                var relationType = new RelationType(new Guid("b796f64c-1f99-4ffb-b886-4bf4bc011a9c"), new Guid("c66ba18e-eaf3-4cff-8a22-41b16d66a972"), "uMediaSyncFileRelation", "uMediaSyncFileRelation");
+                var relationType = new RelationType(new Guid("b796f64c-1f99-4ffb-b886-4bf4bc011a9c"), new Guid("c66ba18e-eaf3-4cff-8a22-41b16d66a972"), Constants.FileRelationTypeAlias, Constants.FileRelationTypeAlias);
                 uMediaSyncHelper.relationService.Save(relationType);
             }
         }
