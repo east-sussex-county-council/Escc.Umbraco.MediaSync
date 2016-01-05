@@ -1,0 +1,62 @@
+<div ng-controller="Escc.Umbraco.PropertyEditors.RichTextPropertyEditor.PreValueController">
+
+    <umb-control-group label="Toolbar" hide-label="false">
+        <div ng-repeat="cmd in tinyMceConfig.commands">
+            <label>
+                <input type="checkbox"
+                       ng-checked="selected(cmd, cmd.frontEndCommand, model.value.toolbar)"
+                       ng-model="cmd.selected"
+                       ng-change="selectCommand(cmd)" />
+
+                <img ng-src="{{cmd.icon}}" />
+
+                {{cmd.frontEndCommand}}
+            </label>
+        </div>
+    </umb-control-group>
+
+    <umb-control-group label="Stylesheets" hide-label="0">
+        <div ng-repeat="css in stylesheets">
+            <label>
+                <input type="checkbox"
+                       ng-checked="selected(css, css.name, model.value.stylesheets)"
+                       ng-model="css.selected"
+                       ng-change="selectOption(css, model.value.stylesheets)" />
+                {{css.name}}
+            </label>
+        </div>
+    </umb-control-group>
+    
+    <umb-control-group label="Validators" hide-label="0">
+        <div ng-repeat="validator in validators">
+            <label>
+                <input type="checkbox"
+                       ng-checked="selectedByName(validator, validator.name, model.value.validators)"
+                       ng-model="validator.selected"
+                       ng-change="selectOptionByName(validator, model.value.validators)" 
+                       style="vertical-align: baseline" />
+                {{validator.displayName}}
+                <input type="number" ng-show="validator.hasMaxValue" ng-model="validator.max"
+                       ng-change="updateValidatorOption('max', validator, model.value.validators)"
+                       style="vertical-align: middle; width: 4em;" />
+            </label>
+        </div>
+    </umb-control-group>
+    
+    <umb-control-group label="Formatters" hide-label="0">
+        <div ng-repeat="formatter in formatters">
+            <label>
+                <input type="checkbox"
+                       ng-checked="selected(formatter, formatter.name, model.value.formatters)"
+                       ng-model="formatter.selected"
+                       ng-change="selectOption(formatter, model.value.formatters)" />
+                {{formatter.displayName}}
+            </label>
+        </div>
+    </umb-control-group>
+
+    <umb-control-group label="Dimensions" description="Width x Height">
+        <input type="number" ng-model="model.value.dimensions.width" class="umb-editor-tiny" placeholder="Width" /> &times;
+        <input type="number" ng-model="model.value.dimensions.height" class="umb-editor-tiny" placeholder="Height" /> Pixels
+    </umb-control-group>
+</div>

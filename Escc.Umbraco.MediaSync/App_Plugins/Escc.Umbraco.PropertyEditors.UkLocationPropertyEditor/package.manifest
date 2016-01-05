@@ -1,0 +1,34 @@
+{   
+    propertyEditors: [      
+        {
+            alias: "Escc.Umbraco.PropertyEditors.UkLocationPropertyEditor",
+            name: "UK location",
+            editor: {
+                view: "~/App_Plugins/Escc.Umbraco.PropertyEditors.UKLocationPropertyEditor/editor.html"
+            },
+            "prevalues": {
+                "fields":  [
+                    {
+                        "label": "Show address fields",
+                        "view": "boolean",
+                        "key": "address"
+                    },
+					{
+                        "label": "Show latitude and longitude fields",
+                        "view": "boolean",
+                        "key": "latLon"
+                    },
+					{
+                        "label": "Show easting and northing fields",
+                        "view": "boolean",
+                        "key": "eastingNorthing"
+                    }
+                ]
+            }
+        }
+    ]
+    ,
+    javascript: [
+        '~/App_Plugins/Escc.Umbraco.PropertyEditors.UKLocationPropertyEditor/UKLocationPropertyEditor.js'
+    ]
+}
