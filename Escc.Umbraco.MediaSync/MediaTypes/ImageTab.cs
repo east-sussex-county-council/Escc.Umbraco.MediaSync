@@ -29,7 +29,7 @@ namespace Escc.Umbraco.MediaSync.MediaTypes
         /// <summary>
         /// New field to show where media item is used.
         /// </summary>
-        [UmbracoProperty("Media Content Usage", "MediaContentUsage", BuiltInUmbracoDataTypes.NoEdit, sortOrder: 6, addTabAliasToPropertyAlias: false)]
+        [UmbracoProperty("Media Content Usage", "MediaContentUsage", "Escc.MediaContentUsage", sortOrder: 6, addTabAliasToPropertyAlias: false)]
         public string MediaContentUsage { get; set; }
     }
 }
