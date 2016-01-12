@@ -15,17 +15,29 @@ namespace Escc.Umbraco.MediaSync
 
         private static int UserId()
         {
-            // When logged into the Umbraco back office
-            if (!String.IsNullOrEmpty(HttpContext.Current.User.Identity.Name))
+            int rtnVal;
+
+            try
             {
-                return Convert.ToInt32(ApplicationContext.Current.Services.UserService.GetByUsername(HttpContext.Current.User.Identity.Name).Id);
+                // When logged into the Umbraco back office
+                if (!String.IsNullOrEmpty(HttpContext.Current.User.Identity.Name))
+                {
+                    rtnVal = Convert.ToInt32(ApplicationContext.Current.Services.UserService.GetByUsername(HttpContext.Current.User.Identity.Name).Id);
+                }
+                else
+                {
+                    // When called from an API
+                    var configured = new XmlConfigurationProvider().ReadIntegerSetting("userId");
+                    return configured ?? 0;
+                }
             }
-            else
+            catch (Exception)
             {
-                // When called from an API
-                var configured = new XmlConfigurationProvider().ReadIntegerSetting("userId");
-                return configured ?? 0;
+                // Default to 0 (admin)
+                rtnVal = 0;
             }
+
+            return rtnVal;
         }
     }
 }
