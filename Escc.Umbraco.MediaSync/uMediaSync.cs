@@ -119,37 +119,9 @@ namespace Escc.Umbraco.MediaSync
         /// <param name="e">The e.</param>
         void ContentService_Moved(IContentService sender, MoveEventArgs<IContent> e)
         {
-           if (HttpContext.Current.Request.Cookies["uMediaSyncNotMove_" + e.Entity.ParentId] == null)
+            if (HttpContext.Current.Request.Cookies["uMediaSyncNotMove_" + e.Entity.ParentId] == null)
             {
-                IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(e.Entity.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                IRelation uMediaSyncRelation = uMediaSyncRelationsBefore.FirstOrDefault();
-                if (uMediaSyncRelation != null)
-                {
-                    int mediaId = uMediaSyncRelation.ChildId;
-
-                    IEnumerable<IRelation> uMediaSyncRelationsNew = uMediaSyncHelper.relationService.GetByParentId(e.Entity.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                    IRelation uMediaSyncRelationNew = uMediaSyncRelationsNew.FirstOrDefault();
-
-                    if (uMediaSyncRelationNew == null && _config.ReadBooleanSetting("checkForMissingRelations"))
-                    {
-                        // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
-                        _folderService.CreateRelatedMediaNode(e.Entity.Parent());
-
-                        // get the new relation for the parent
-                        IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(e.Entity.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                        uMediaSyncRelationNew = uMediaSyncRelationsAfter.FirstOrDefault();
-                    } 
-
-                    if (uMediaSyncRelationNew != null)
-                    {
-                        int mediaParentNewId = uMediaSyncRelationNew.ChildId;
-
-                        IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
-                        IMedia mediaParentNew = uMediaSyncHelper.mediaService.GetById(mediaParentNewId);
-
-                        uMediaSyncHelper.mediaService.Move(media, mediaParentNew.Id, uMediaSyncHelper.userId);
-                    }
-                }
+                _folderService.MoveRelatedMediaNode(e.Entity);
             }
             else
             {
@@ -159,6 +131,7 @@ namespace Escc.Umbraco.MediaSync
             }
         }
 
+       
         /// <summary>
         /// When a page is copied, copy its media folder and all its files too, then set up a relation between the two copies and publish the page
         /// </summary>
@@ -256,7 +229,20 @@ namespace Escc.Umbraco.MediaSync
                     {
                         int mediaId = uMediaSyncRelation.ChildId;
                         IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
-                        uMediaSyncHelper.mediaService.MoveToRecycleBin(media, uMediaSyncHelper.userId);
+
+                        // Check - does this media folder have another associated content node? It shouldn't, because it should be a one-to-one relationship, 
+                        // but it is possible somehow to get into a situation where it does. If there's another content node related to this media folder, just
+                        // remove the relationship to the content node being trashed. 
+                        var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                        if (contentRelatedToMedia.Count() > 1)
+                        {
+                            uMediaSyncHelper.relationService.Delete(uMediaSyncRelation);
+                        }
+                        else
+                        {
+                            // If all is normal and there's just one relationship, move the media folder to the media recycle bin as the content node moves to the content recycle bin.
+                            uMediaSyncHelper.mediaService.MoveToRecycleBin(media, uMediaSyncHelper.userId);
+                        }
                     }
                 }
             }

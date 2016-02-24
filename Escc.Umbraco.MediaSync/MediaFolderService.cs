@@ -76,6 +76,42 @@ namespace Escc.Umbraco.MediaSync
                 }
             }
         }
+        /// <summary>
+        /// For a content node, moves its related media node to the correct location.
+        /// </summary>
+        /// <param name="contentNode">The content node.</param>
+        public void MoveRelatedMediaNode(IContent contentNode)
+        {
+            IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(contentNode.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+            IRelation uMediaSyncRelation = uMediaSyncRelationsBefore.FirstOrDefault();
+            if (uMediaSyncRelation != null)
+            {
+                int mediaId = uMediaSyncRelation.ChildId;
+
+                IEnumerable<IRelation> uMediaSyncRelationsNew = uMediaSyncHelper.relationService.GetByParentId(contentNode.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                IRelation uMediaSyncRelationNew = uMediaSyncRelationsNew.FirstOrDefault();
+
+                if (uMediaSyncRelationNew == null && _config.ReadBooleanSetting("checkForMissingRelations"))
+                {
+                    // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
+                    CreateRelatedMediaNode(contentNode.Parent());
+
+                    // get the new relation for the parent
+                    IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(contentNode.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                    uMediaSyncRelationNew = uMediaSyncRelationsAfter.FirstOrDefault();
+                }
+
+                if (uMediaSyncRelationNew != null)
+                {
+                    int mediaParentNewId = uMediaSyncRelationNew.ChildId;
+
+                    IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
+                    IMedia mediaParentNew = uMediaSyncHelper.mediaService.GetById(mediaParentNewId);
+
+                    uMediaSyncHelper.mediaService.Move(media, mediaParentNew.Id, uMediaSyncHelper.userId);
+                }
+            }
+        }
 
         /// <summary>
         /// Deletes a media node, preserving any files that are still needed by moving them to another folder.
@@ -90,9 +126,27 @@ namespace Escc.Umbraco.MediaSync
                 int mediaId = uMediaSyncRelation.ChildId;
                 IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
 
-                MoveFilesInFolderIfStillInUse(nodeId, media);
+                // Check - does this media folder have another associated content node? It shouldn't, because it should be a one-to-one relationship, 
+                // but it is possible somehow to get into a situation where it does. 
+                var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias && r.ParentId != nodeId);
+                var nextContentRelation = contentRelatedToMedia.FirstOrDefault();
+                if (nextContentRelation != null)
+                {
+                    // If there's another content node related to this media folder, remove the relationship to the content node being deleted. 
+                    uMediaSyncHelper.relationService.Delete(uMediaSyncRelation);
 
-                uMediaSyncHelper.mediaService.Delete(media, uMediaSyncHelper.userId);
+                    // Then move the media node to the correct place for the next related content node
+                    MoveRelatedMediaNode(uMediaSyncHelper.contentService.GetById(nextContentRelation.ParentId));
+                }
+                else
+                {
+                    // If all is normal and there's just one relationship, move any files that have a relationship with another content node, 
+                    // then delete the media folder and any remaining files
+
+                    MoveFilesInFolderIfStillInUse(nodeId, media);
+
+                    uMediaSyncHelper.mediaService.Delete(media, uMediaSyncHelper.userId);
+                }
             }
         }
 
