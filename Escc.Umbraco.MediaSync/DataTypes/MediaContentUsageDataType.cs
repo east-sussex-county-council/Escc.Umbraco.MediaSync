@@ -1,21 +1,15 @@
 ﻿using System.Collections.Generic;
-using Escc.EastSussexGovUK.UmbracoDocumentTypes.DataTypes;
 using Umbraco.Core.Models;
+using Umbraco.Inception.Attributes;
+using Umbraco.Inception.BL;
 
 namespace Escc.Umbraco.MediaSync.DataTypes
 {
-    public static class MediaContentUsageDataType
+    [UmbracoDataType(DataTypeName, PropertyEditor, typeof(MediaContentUsageDataType), DataTypeDatabaseType.Ntext)]
+    public class MediaContentUsageDataType : IPreValueProvider
     {
         public const string DataTypeName = "Media Content Usage";
         public const string PropertyEditor = "Escc.MediaContentUsage";
-
-        public static void CreateDataType()
-        {
-            IDictionary<string, PreValue> preValues = new Dictionary<string, PreValue>();
-
-            
-            UmbracoDataTypeService.InsertDataType(DataTypeName, "Escc.MediaContentUsage", DataTypeDatabaseType.Ntext, preValues);
-        }
-
+        public IDictionary<string, PreValue> PreValues { get {return new Dictionary<string, PreValue>();} }
     }
 }

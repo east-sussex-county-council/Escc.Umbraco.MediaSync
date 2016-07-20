@@ -10,6 +10,7 @@ In addition to the features of uMediaSync, this adds:
 * An extra option to decide, when copying a media folder tree with a page, whether also to copy the files contained in its folders. The copied page still refers to the original files, so it may not be helpful to make copies.
 * When a page is copied, it is not automatically published. This replicates how Umbraco works by default.
 * When modifying Umbraco content from an Umbraco Web API, supports getting the userId from `uMediaSync.config` instead of using the identify of the current user. 
+* An property editor assigned to an extra property on the Image and File media types to show where the media item is used.
 
 ## uMediaSync
 

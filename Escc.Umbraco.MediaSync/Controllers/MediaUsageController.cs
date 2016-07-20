@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Web.Http;
 using Escc.Umbraco.MediaSync.DataTypes;
 using Exceptionless;
+using Umbraco.Inception.CodeFirst;
 using Umbraco.Web.WebApi;
 
 namespace Escc.Umbraco.MediaSync.Controllers
@@ -23,7 +24,7 @@ namespace Escc.Umbraco.MediaSync.Controllers
         }
         
         /// <summary>
-        /// Creates the supporting types (eg data types) needed for <see cref="CreateUmbracoDocumentTypes"/> to succeed.
+        /// Creates the supporting types (eg data types) needed for this feature.
         /// </summary>
         /// <returns></returns>
         [SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling"), SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
@@ -34,7 +35,7 @@ namespace Escc.Umbraco.MediaSync.Controllers
 
             try
             {
-                MediaContentUsageDataType.CreateDataType();
+                UmbracoCodeFirstInitializer.CreateDataType(typeof(MediaContentUsageDataType));
 
                 return Request.CreateResponse(HttpStatusCode.Created);
             }
