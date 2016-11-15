@@ -113,11 +113,13 @@ namespace Escc.Umbraco.MediaSync
                         {
                             // If not, create a new relation
                             var mediaItem = uMediaSyncHelper.mediaService.GetById(mediaNodeId);
+                            if (mediaItem != null)
+                            {
+                                IRelation relation = uMediaSyncHelper.relationService.Relate(node, mediaItem, Constants.FileRelationTypeAlias);
+                                uMediaSyncHelper.relationService.Save(relation);
 
-                            IRelation relation = uMediaSyncHelper.relationService.Relate(node, mediaItem, Constants.FileRelationTypeAlias);
-                            uMediaSyncHelper.relationService.Save(relation);
-
-                            relatedMediaIds.Add(mediaNodeId);
+                                relatedMediaIds.Add(mediaNodeId);
+                            }
                         }
                     }
                     

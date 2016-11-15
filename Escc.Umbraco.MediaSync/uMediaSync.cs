@@ -193,6 +193,7 @@ namespace Escc.Umbraco.MediaSync
                         // if they do match, then the media didn't exist already, so continue as normal.
                         else
                         {
+
                             CopyMedia(media1, media2);
 
                             IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, Constants.FolderRelationTypeAlias);
