@@ -41,7 +41,7 @@ namespace Escc.Umbraco.MediaSync
         void ContentService_Saving(IContentService sender, SaveEventArgs<IContent> e)
         {
             if (_config.ReadBooleanSetting("renameMedia"))
-            {                
+            {
                 foreach (var node in e.SavedEntities)
                 {
                     if (node.HasIdentity)
@@ -131,7 +131,7 @@ namespace Escc.Umbraco.MediaSync
             }
         }
 
-       
+
         /// <summary>
         /// When a page is copied, copy its media folder and all its files too, then set up a relation between the two copies and publish the page
         /// </summary>
@@ -168,9 +168,9 @@ namespace Escc.Umbraco.MediaSync
                         // get the new relation for the parent
                         IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(content2.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                         uMediaSyncRelation2Parent = uMediaSyncRelationsAfter.FirstOrDefault();
-                    } 
+                    }
 
-                    
+
                     if (uMediaSyncRelation2Parent != null)
                     {
                         int media2ParentId = uMediaSyncRelation2Parent.ChildId;
@@ -179,14 +179,24 @@ namespace Escc.Umbraco.MediaSync
 
                         IMedia media2 = uMediaSyncHelper.mediaService.CreateMedia(content1.Name, media2Parent, "Folder", uMediaSyncHelper.userId);
 
+                        var temp = media2.Name;
+
                         uMediaSyncHelper.mediaService.Save(media2, uMediaSyncHelper.userId);
 
-                        CopyMedia(media1, media2);
+                        if (media2.Name != temp)
+                        {
+                            uMediaSyncHelper.mediaService.Delete(media2);
+                        }
+                        else
+                        {
+                            CopyMedia(media1, media2);
 
-                        IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, Constants.FolderRelationTypeAlias);
-                        uMediaSyncHelper.relationService.Save(relation);
+                            IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, Constants.FolderRelationTypeAlias);
+                            uMediaSyncHelper.relationService.Save(relation);
 
-                        uMediaSyncHelper.contentService.Save(content2, uMediaSyncHelper.userId);
+                            uMediaSyncHelper.contentService.Save(content2, uMediaSyncHelper.userId);
+                        }
+
                     }
                 }
             }
@@ -257,7 +267,7 @@ namespace Escc.Umbraco.MediaSync
         void ContentService_EmptyingRecycleBin(IContentService sender, RecycleBinEventArgs e)
         {
             if (!_config.ReadBooleanSetting("deleteMedia")) return;
-            
+
             if (!e.IsContentRecycleBin) return;
 
             foreach (var contentNodeId in e.Ids)
@@ -299,10 +309,10 @@ namespace Escc.Umbraco.MediaSync
                                 mediaItem.SetValue("umbracoFile", fName, fs);
                             }
                         }
-                    } 
+                    }
                     else if (item.ContentType.Alias.ToUpperInvariant() == "FOLDER")
                     {
-                        mediaItem = uMediaSyncHelper.mediaService.CreateMedia(item.Name, media2Parent, item.ContentType.Alias, uMediaSyncHelper.userId);                        
+                        mediaItem = uMediaSyncHelper.mediaService.CreateMedia(item.Name, media2Parent, item.ContentType.Alias, uMediaSyncHelper.userId);
                     }
 
                     if (mediaItem != null)
