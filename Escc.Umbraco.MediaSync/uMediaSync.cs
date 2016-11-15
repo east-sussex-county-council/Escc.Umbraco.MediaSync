@@ -179,14 +179,18 @@ namespace Escc.Umbraco.MediaSync
 
                         IMedia media2 = uMediaSyncHelper.mediaService.CreateMedia(content1.Name, media2Parent, "Folder", uMediaSyncHelper.userId);
 
-                        var temp = media2.Name;
-
+                        // Create a temp variable to store the original media name before saving.
+                        var originalMediaName = media2.Name;
+             
                         uMediaSyncHelper.mediaService.Save(media2, uMediaSyncHelper.userId);
 
-                        if (media2.Name != temp)
+                        // After saving, the media name and the saved folder name might not match, because the folder already existed.
+                        // If they don't match, delete the folder, as it is an unnecesary duplicate.
+                        if (media2.Name != originalMediaName)
                         {
                             uMediaSyncHelper.mediaService.Delete(media2);
                         }
+                        // if they do match, then the media didn't exist already, so continue as normal.
                         else
                         {
                             CopyMedia(media1, media2);
