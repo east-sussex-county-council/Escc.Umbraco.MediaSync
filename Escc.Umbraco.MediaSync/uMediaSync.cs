@@ -181,7 +181,7 @@ namespace Escc.Umbraco.MediaSync
 
                         // Create a temp variable to store the original media name before saving.
                         var originalMediaName = media2.Name;
-             
+
                         uMediaSyncHelper.mediaService.Save(media2, uMediaSyncHelper.userId);
 
                         // After saving, the media name and the saved folder name might not match, because the folder already existed.
@@ -189,6 +189,8 @@ namespace Escc.Umbraco.MediaSync
                         if (media2.Name != originalMediaName)
                         {
                             uMediaSyncHelper.mediaService.Delete(media2);
+                            //media2.Name = originalMediaName;
+                            //CopyMedia(media1, media2);
                         }
                         // if they do match, then the media didn't exist already, so continue as normal.
                         else
@@ -297,6 +299,7 @@ namespace Escc.Umbraco.MediaSync
                     IMedia mediaItem = null;
                     if (copyFiles)
                     {
+
                         mediaItem = uMediaSyncHelper.mediaService.CreateMedia(item.Name, media2Parent, item.ContentType.Alias, uMediaSyncHelper.userId);
 
                         if (item.HasProperty("umbracoFile") && !String.IsNullOrEmpty(item.GetValue("umbracoFile").ToString()))
@@ -310,6 +313,13 @@ namespace Escc.Umbraco.MediaSync
                                 string fName = mediaFile.Substring(mediaFile.LastIndexOf('/') + 1);
 
                                 FileStream fs = File.OpenRead(HttpContext.Current.Server.MapPath(mediaFile));
+
+                                // Check the file's extension just in case it is actually an image
+                                // If it is an image, reset the mediaItem with its content type set to "Image"
+                                if (fName.EndsWith(".png") || fName.EndsWith(".jpg") || fName.EndsWith(".gif") || fName.EndsWith(".jpeg"))
+                                {
+                                    mediaItem = uMediaSyncHelper.mediaService.CreateMedia(item.Name, media2Parent, "Image", uMediaSyncHelper.userId);
+                                }
 
                                 mediaItem.SetValue("umbracoFile", fName, fs);
                             }
