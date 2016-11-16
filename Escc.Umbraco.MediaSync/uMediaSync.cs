@@ -178,7 +178,6 @@ namespace Escc.Umbraco.MediaSync
                         int media2ParentId = uMediaSyncRelation2Parent.ChildId;
 
                         IMedia media2Parent = uMediaSyncHelper.mediaService.GetById(media2ParentId);
-                        int media2ChildId = uMediaSyncRelation2Parent.ParentId;
 
                         IMedia media2 = uMediaSyncHelper.mediaService.CreateMedia(content1.Name, media2Parent, "Folder", uMediaSyncHelper.userId);
 
@@ -200,13 +199,14 @@ namespace Escc.Umbraco.MediaSync
                             CopyMedia(media1, media2);
                         }
                         // if they do match, then the media didn't exist already, so continue as normal.
-                        else { 
-                        CopyMedia(media1, media2);
+                        else
+                        {
+                            CopyMedia(media1, media2);
 
-                        IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, Constants.FolderRelationTypeAlias);
-                        uMediaSyncHelper.relationService.Save(relation);
+                            IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, Constants.FolderRelationTypeAlias);
+                            uMediaSyncHelper.relationService.Save(relation);
 
-                        uMediaSyncHelper.contentService.Save(content2, uMediaSyncHelper.userId);
+                            uMediaSyncHelper.contentService.Save(content2, uMediaSyncHelper.userId);
 
                         }
                     }
@@ -348,7 +348,7 @@ namespace Escc.Umbraco.MediaSync
                         // Hold the item name before saving the media
                         var originalName = item.Name;
                         uMediaSyncHelper.mediaService.Save(mediaItem, uMediaSyncHelper.userId);
-                        
+
                         // if after saving the names have changed, then the media already existed, so delete the duplicate
                         if (originalName != mediaItem.Name)
                         {
