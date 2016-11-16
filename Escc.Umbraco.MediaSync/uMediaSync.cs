@@ -178,6 +178,7 @@ namespace Escc.Umbraco.MediaSync
                         int media2ParentId = uMediaSyncRelation2Parent.ChildId;
 
                         IMedia media2Parent = uMediaSyncHelper.mediaService.GetById(media2ParentId);
+                        int media2ChildId = uMediaSyncRelation2Parent.ParentId;
 
                         IMedia media2 = uMediaSyncHelper.mediaService.CreateMedia(content1.Name, media2Parent, "Folder", uMediaSyncHelper.userId);
 
@@ -185,25 +186,29 @@ namespace Escc.Umbraco.MediaSync
                         var originalMediaName = media2.Name;
 
                         uMediaSyncHelper.mediaService.Save(media2, uMediaSyncHelper.userId);
-
                         // After saving, the media name and the saved folder name might not match, because the folder already existed.
                         // If they don't match, delete the folder, as it is an unnecesary duplicate.
                         if (media2.Name != originalMediaName)
                         {
                             uMediaSyncHelper.mediaService.Delete(media2);
+
+                            // After deleting , recreate the media object, get the Id of the existing media folder, and set media2 to this id
+                            // then copy any missing media 
+                            media2 = uMediaSyncHelper.mediaService.CreateMedia(content1.Name, media2Parent, "Folder", uMediaSyncHelper.userId);
+                            var originalMedia = uMediaSyncHelper.mediaService.GetChildren(media2ParentId).FirstOrDefault(media => media.Name == media1.Name);
+                            media2.Id = originalMedia.Id;
+                            CopyMedia(media1, media2);
                         }
                         // if they do match, then the media didn't exist already, so continue as normal.
-                        else
-                        {
+                        else { 
+                        CopyMedia(media1, media2);
 
-                            CopyMedia(media1, media2);
+                        IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, Constants.FolderRelationTypeAlias);
+                        uMediaSyncHelper.relationService.Save(relation);
 
-                            IRelation relation = uMediaSyncHelper.relationService.Relate(content2, media2, Constants.FolderRelationTypeAlias);
-                            uMediaSyncHelper.relationService.Save(relation);
+                        uMediaSyncHelper.contentService.Save(content2, uMediaSyncHelper.userId);
 
-                            uMediaSyncHelper.contentService.Save(content2, uMediaSyncHelper.userId);
                         }
-
                     }
                 }
             }
@@ -340,8 +345,17 @@ namespace Escc.Umbraco.MediaSync
 
                     if (mediaItem != null)
                     {
+                        // Hold the item name before saving the media
+                        var originalName = item.Name;
                         uMediaSyncHelper.mediaService.Save(mediaItem, uMediaSyncHelper.userId);
-                        if (uMediaSyncHelper.mediaService.GetChildren(item.Id).Count() != 0)
+                        
+                        // if after saving the names have changed, then the media already existed, so delete the duplicate
+                        if (originalName != mediaItem.Name)
+                        {
+                            uMediaSyncHelper.mediaService.Delete(mediaItem);
+                        }
+                        // else continue as normal
+                        else if (uMediaSyncHelper.mediaService.GetChildren(item.Id).Count() != 0)
                         {
                             CopyMedia(item, mediaItem);
                         }
