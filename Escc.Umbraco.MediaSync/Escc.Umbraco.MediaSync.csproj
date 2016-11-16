@@ -238,6 +238,7 @@
     <Compile Include="Models\ContentNode.cs" />
     <Compile Include="Models\ContentPropertiesResult.cs" />
     <Compile Include="Models\ContentResult.cs" />
+    <Compile Include="Models\Image.cs" />
     <Compile Include="Models\MediaContent.cs" />
     <Compile Include="UrlMediaIdProvider.cs" />
     <Compile Include="RelatedLinksMediaIdProvider.cs" />

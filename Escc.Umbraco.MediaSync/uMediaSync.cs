@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Escc.Umbraco.MediaSync.Models;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -189,8 +191,6 @@ namespace Escc.Umbraco.MediaSync
                         if (media2.Name != originalMediaName)
                         {
                             uMediaSyncHelper.mediaService.Delete(media2);
-                            //media2.Name = originalMediaName;
-                            //CopyMedia(media1, media2);
                         }
                         // if they do match, then the media didn't exist already, so continue as normal.
                         else
@@ -304,7 +304,15 @@ namespace Escc.Umbraco.MediaSync
 
                         if (item.HasProperty("umbracoFile") && !String.IsNullOrEmpty(item.GetValue("umbracoFile").ToString()))
                         {
+
                             string mediaFile = item.GetValue("umbracoFile").ToString();
+
+                            // If the content is an image and doesnt start with /media, deserialize the json string to get the actual src path
+                            if (item.ContentType.Alias == "Image" && !mediaFile.ToUpperInvariant().StartsWith("/MEDIA"))
+                            {
+                                Image tempImage = JsonConvert.DeserializeObject<Image>(mediaFile);
+                                mediaFile = tempImage.src;
+                            }
 
                             string newFile = HttpContext.Current.Server.MapPath(mediaFile);
 
@@ -316,7 +324,7 @@ namespace Escc.Umbraco.MediaSync
 
                                 // Check the file's extension just in case it is actually an image
                                 // If it is an image, reset the mediaItem with its content type set to "Image"
-                                if (fName.EndsWith(".png") || fName.EndsWith(".jpg") || fName.EndsWith(".gif") || fName.EndsWith(".jpeg"))
+                                if (item.ContentType.Alias == "File" && fName.EndsWith(".png") || fName.EndsWith(".jpg") || fName.EndsWith(".gif") || fName.EndsWith(".jpeg"))
                                 {
                                     mediaItem = uMediaSyncHelper.mediaService.CreateMedia(item.Name, media2Parent, "Image", uMediaSyncHelper.userId);
                                 }
