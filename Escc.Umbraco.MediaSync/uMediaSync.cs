@@ -48,10 +48,12 @@ namespace Escc.Umbraco.MediaSync
                 {
                     if (node.HasIdentity)
                     {
-                        if (uMediaSyncHelper.contentService.GetPublishedVersion(node.Id) != null)
+                        // Get the old content by id. Content can already exist and need its media files renamed without being published.
+                        IContent oldContent = uMediaSyncHelper.contentService.GetById(node.Id);
+                        // If there is no old content, nothing needs to happen.
+                        if (oldContent != null)
                         {
-                            IContent oldContent = uMediaSyncHelper.contentService.GetPublishedVersion(node.Id);
-
+                            // if the current node and old content node have different names, then a change has occured and the media files need to be renamed
                             if (oldContent.Name != node.Name)
                             {
                                 IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(node.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
