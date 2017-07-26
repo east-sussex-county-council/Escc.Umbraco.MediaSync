@@ -230,7 +230,7 @@ namespace Escc.Umbraco.MediaSync
                 {
                     if (_config.SyncNode(node))
                     {
-                        _folderService.DeleteRelatedMediaNode(node.Id);
+                        _folderService.MoveOrDeleteRelatedMediaNode(node.Id, "Delete");
                     }
                 }
             }
@@ -270,6 +270,7 @@ namespace Escc.Umbraco.MediaSync
                         }
                     }
                 }
+                   _folderService.MoveOrDeleteRelatedMediaNode(e.Entity.Id, "Move");
             }
         }
 
@@ -287,7 +288,7 @@ namespace Escc.Umbraco.MediaSync
 
             foreach (var contentNodeId in e.Ids)
             {
-                _folderService.DeleteRelatedMediaNode(contentNodeId);
+                _folderService.MoveOrDeleteRelatedMediaNode(contentNodeId, "Delete");
             }
         }
 

@@ -117,7 +117,7 @@ namespace Escc.Umbraco.MediaSync
         /// Deletes a media node, preserving any files that are still needed by moving them to another folder.
         /// </summary>
         /// <param name="nodeId">The node identifier.</param>
-        public void DeleteRelatedMediaNode(int nodeId)
+        public void MoveOrDeleteRelatedMediaNode(int nodeId, string OpType)
         {
             IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(nodeId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
             IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
@@ -132,9 +132,11 @@ namespace Escc.Umbraco.MediaSync
                 var nextContentRelation = contentRelatedToMedia.FirstOrDefault();
                 if (nextContentRelation != null)
                 {
-                    // If there's another content node related to this media folder, remove the relationship to the content node being deleted. 
-                    uMediaSyncHelper.relationService.Delete(uMediaSyncRelation);
-
+                    if (OpType == "Delete")
+                    {
+                        // If there's another content node related to this media folder, remove the relationship to the content node being deleted. 
+                        uMediaSyncHelper.relationService.Delete(uMediaSyncRelation);
+                    }
                     // Then move the media node to the correct place for the next related content node
                     MoveRelatedMediaNode(uMediaSyncHelper.contentService.GetById(nextContentRelation.ParentId));
                 }
