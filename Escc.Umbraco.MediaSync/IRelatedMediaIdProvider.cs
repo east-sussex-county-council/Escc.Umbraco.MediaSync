@@ -10,7 +10,7 @@ namespace Escc.Umbraco.MediaSync
     /// <summary>
     /// A provider which identifies media items related to a content node
     /// </summary>
-    interface IRelatedMediaIdProvider
+    public interface IRelatedMediaIdProvider
     {
         /// <summary>
         /// Determines whether this instance can read the type of property
