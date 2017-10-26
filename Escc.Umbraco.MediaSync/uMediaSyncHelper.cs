@@ -27,7 +27,7 @@ namespace Escc.Umbraco.MediaSync
                 else
                 {
                     // When called from an API
-                    var configured = new XmlConfigurationProvider().ReadIntegerSetting("userId");
+                    var configured = new MediaSyncConfigurationFromXml().ReadIntegerSetting("userId");
                     return configured ?? 0;
                 }
             }

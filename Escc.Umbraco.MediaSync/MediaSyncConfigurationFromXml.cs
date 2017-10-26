@@ -12,7 +12,7 @@ namespace Escc.Umbraco.MediaSync
     /// <summary>
     /// Reads configuration settings from an XML file
     /// </summary>
-    public class XmlConfigurationProvider : IMediaSyncConfigurationProvider
+    public class MediaSyncConfigurationFromXml : IMediaSyncConfigurationProvider
     {
         /// <summary>
         /// Reads a setting in the <c>general</c> section of the configuration file.

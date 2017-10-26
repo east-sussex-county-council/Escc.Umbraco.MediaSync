@@ -8,7 +8,7 @@ namespace Escc.Umbraco.MediaSync
 {
     public class MediaFolderService
     {
-        private readonly IMediaSyncConfigurationProvider _config = new XmlConfigurationProvider();
+        private readonly IMediaSyncConfigurationProvider _config = new MediaSyncConfigurationFromXml();
 
         /// <summary>
         /// Checks that the given content node has a relation to a media node, and creates a related media node if not

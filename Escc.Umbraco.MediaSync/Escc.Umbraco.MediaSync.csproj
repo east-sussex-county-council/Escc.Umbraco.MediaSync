@@ -248,7 +248,7 @@
     <Compile Include="MediaFileSync.cs" />
     <Compile Include="MediaFolderService.cs" />
     <Compile Include="MediaPickerIdProvider.cs" />
-    <Compile Include="XmlConfigurationProvider.cs" />
+    <Compile Include="MediaSyncConfigurationFromXml.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="uMediaSync.cs" />
     <Compile Include="uMediaSyncHelper.cs" />

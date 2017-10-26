@@ -20,7 +20,7 @@ namespace Escc.Umbraco.MediaSync
     /// </summary>
     public class uMediaSync : ApplicationEventHandler
     {
-        private readonly IMediaSyncConfigurationProvider _config = new XmlConfigurationProvider();
+        private readonly IMediaSyncConfigurationProvider _config = new MediaSyncConfigurationFromXml();
         private readonly MediaFolderService _folderService = new MediaFolderService();
 
         public uMediaSync()
