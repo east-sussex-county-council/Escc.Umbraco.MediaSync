@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using HtmlAgilityPack;
-using Our.Umbraco.PropertyConverters.Models;
 using Umbraco.Core.Models;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace Escc.Umbraco.MediaSync
 {
@@ -44,14 +41,14 @@ namespace Escc.Umbraco.MediaSync
         {
             var mediaIds = new List<int>();
 
-            if (property != null && property.Value != null && !String.IsNullOrEmpty(property.Value.ToString()))
+            if (!String.IsNullOrEmpty(property?.Value?.ToString()))
             {
-                var relatedLinks = new RelatedLinks(property.Value.ToString());
+                var relatedLinks = JsonConvert.DeserializeObject<JArray>(property.Value.ToString());
                 foreach (var relatedLink in relatedLinks)
                 {
                     try
                     {
-                        var uri = new Uri(relatedLink.Link, UriKind.RelativeOrAbsolute);
+                        var uri = new Uri(relatedLink.Value<string>("link"), UriKind.RelativeOrAbsolute);
                         string mediaPath = (uri.IsAbsoluteUri ? uri.AbsolutePath : uri.ToString());
                         if (!mediaPath.StartsWith("/media/", StringComparison.OrdinalIgnoreCase)) continue;
 

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
-using Our.Umbraco.PropertyConverters.Models;
 using Umbraco.Core.Models;
 
 namespace Escc.Umbraco.MediaSync
