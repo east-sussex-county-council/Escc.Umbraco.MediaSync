@@ -43,6 +43,7 @@ namespace Escc.Umbraco.MediaSync
                     _mediaIdProviders = new List<IRelatedMediaIdProvider>() {
                         new MediaPickerIdProvider(_config, ApplicationContext.Current.Services.DataTypeService), 
                         new HtmlMediaIdProvider(_config), 
+                        new GridHtmlMediaIdProvider(_config),
                         new RelatedLinksMediaIdProvider(_config),
                         new UrlMediaIdProvider(_config)
                     };

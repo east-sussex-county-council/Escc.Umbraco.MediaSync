@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Escc.Umbraco.MediaSync", "Escc.Umbraco.MediaSync\Escc.Umbraco.MediaSync.csproj", "{C1F5AA94-E582-414C-9C15-87A5FD9AC54D}"
 EndProject
@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution 
 		LICENSE.md = LICENSE.md
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Escc.Umbraco.MediaSync.Tests", "Escc.Umbraco.MediaSync.Tests\Escc.Umbraco.MediaSync.Tests.csproj", "{7C27B64C-70BB-4E06-86E6-BF86065B3E46}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,8 +24,15 @@ Global
 		{C1F5AA94-E582-414C-9C15-87A5FD9AC54D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1F5AA94-E582-414C-9C15-87A5FD9AC54D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1F5AA94-E582-414C-9C15-87A5FD9AC54D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C27B64C-70BB-4E06-86E6-BF86065B3E46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C27B64C-70BB-4E06-86E6-BF86065B3E46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C27B64C-70BB-4E06-86E6-BF86065B3E46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C27B64C-70BB-4E06-86E6-BF86065B3E46}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8B7A7679-C68B-4962-A866-8807872F420B}
 	EndGlobalSection
 EndGlobal
