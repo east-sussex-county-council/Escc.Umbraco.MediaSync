@@ -246,33 +246,15 @@ namespace Escc.Umbraco.MediaSync
         {
             if (_config.ReadBooleanSetting("deleteMedia"))
             {
-                if (_config.SyncNode(e.Entity))
+                foreach (var moved in e.MoveInfoCollection)
                 {
-                    IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(e.Entity.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                    IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
-                    if (uMediaSyncRelation != null)
+                    if (_config.SyncNode(moved.Entity))
                     {
-                        int mediaId = uMediaSyncRelation.ChildId;
-                        IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
-
-                        // Check - does this media folder have another associated content node? It shouldn't, because it should be a one-to-one relationship, 
-                        // but it is possible somehow to get into a situation where it does. If there's another content node related to this media folder, just
-                        // remove the relationship to the content node being trashed. 
-                        var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                        if (contentRelatedToMedia.Count() > 1)
-                        {
-                            uMediaSyncHelper.relationService.Delete(uMediaSyncRelation);
-                        }
-                        else
-                        {
-                            // If all is normal and there's just one relationship, move the media folder to the media recycle bin as the content node moves to the content recycle bin.
-                            uMediaSyncHelper.mediaService.MoveToRecycleBin(media, uMediaSyncHelper.userId);
-                        }
+                        _folderService.MoveRelatedMediaNodeToRecycleBin(moved.Entity.Id);
                     }
                 }
             }
         }
-
 
         /// <summary>
         /// When the content recycle bin is emptied, any media nodes related to the content being deleted should also be deleted

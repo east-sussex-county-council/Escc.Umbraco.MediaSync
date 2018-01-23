@@ -114,12 +114,44 @@ namespace Escc.Umbraco.MediaSync
         }
 
         /// <summary>
+        /// Moves the related media node to the recycle bin, preserving any files that are still needed by moving them to another folder.
+        /// </summary>
+        /// <param name="contentNodeId">The content node identifier.</param>
+        public void MoveRelatedMediaNodeToRecycleBin(int contentNodeId)
+        {
+            IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(contentNodeId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+            IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
+            if (uMediaSyncRelation != null)
+            {
+                int mediaId = uMediaSyncRelation.ChildId;
+                IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
+
+                // Check - does this media folder have another associated content node? It shouldn't, because it should be a one-to-one relationship, 
+                // but it is possible somehow to get into a situation where it does. If there's another content node related to this media folder, just
+                // remove the relationship to the content node being trashed. 
+                var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                if (contentRelatedToMedia.Count() > 1)
+                {
+                    uMediaSyncHelper.relationService.Delete(uMediaSyncRelation);
+                }
+                else
+                {
+                    // If all is normal and there's just one relationship, move any files that have a relationship with another content node, 
+                    // then move the media folder to the media recycle bin as the content node moves to the content recycle bin.
+                    MoveFilesInFolderIfStillInUse(contentNodeId, media);
+
+                    uMediaSyncHelper.mediaService.MoveToRecycleBin(media, uMediaSyncHelper.userId);
+                }
+            }
+        }
+
+        /// <summary>
         /// Deletes a media node, preserving any files that are still needed by moving them to another folder.
         /// </summary>
-        /// <param name="nodeId">The node identifier.</param>
-        public void DeleteRelatedMediaNode(int nodeId)
+        /// <param name="contentNodeId">The content node identifier.</param>
+        public void DeleteRelatedMediaNode(int contentNodeId)
         {
-            IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(nodeId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+            IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(contentNodeId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
             IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
             if (uMediaSyncRelation != null)
             {
@@ -128,7 +160,7 @@ namespace Escc.Umbraco.MediaSync
 
                 // Check - does this media folder have another associated content node? It shouldn't, because it should be a one-to-one relationship, 
                 // but it is possible somehow to get into a situation where it does. 
-                var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias && r.ParentId != nodeId);
+                var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias && r.ParentId != contentNodeId);
                 var nextContentRelation = contentRelatedToMedia.FirstOrDefault();
                 if (nextContentRelation != null)
                 {
@@ -143,7 +175,7 @@ namespace Escc.Umbraco.MediaSync
                     // If all is normal and there's just one relationship, move any files that have a relationship with another content node, 
                     // then delete the media folder and any remaining files
 
-                    MoveFilesInFolderIfStillInUse(nodeId, media);
+                    MoveFilesInFolderIfStillInUse(contentNodeId, media);
 
                     uMediaSyncHelper.mediaService.Delete(media, uMediaSyncHelper.userId);
                 }
