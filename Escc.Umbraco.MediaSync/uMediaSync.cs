@@ -23,6 +23,9 @@ namespace Escc.Umbraco.MediaSync
         private readonly IMediaSyncConfigurationProvider _config = new MediaSyncConfigurationFromXml();
         private readonly MediaFolderService _folderService = new MediaFolderService();
 
+        /// <summary>
+        /// Creates a new instance of <see cref="uMediaSync"/>
+        /// </summary>
         public uMediaSync()
         {
             ContentService.Saving += ContentService_Saving;

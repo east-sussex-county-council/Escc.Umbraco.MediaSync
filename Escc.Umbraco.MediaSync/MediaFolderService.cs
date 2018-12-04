@@ -16,6 +16,8 @@ namespace Escc.Umbraco.MediaSync
         /// <param name="node">The content node.</param>
         public void EnsureRelatedMediaNodeExists(IContent node)
         {
+            try
+            { 
             int contentRoot = String.IsNullOrWhiteSpace(_config.ReadSetting("syncFromContentRootNode")) ? -1 : Convert.ToInt32(_config.ReadSetting("syncFromContentRootNode"));
 
             IContent contentRootNode = uMediaSyncHelper.contentService.GetById(contentRoot);
@@ -32,6 +34,12 @@ namespace Escc.Umbraco.MediaSync
                     }
                 }
             }
+            }
+            catch (Exception ex)
+            {
+                ex.Data.Add("Content node id", node.Id);
+                throw;
+            }
         }
 
 
@@ -41,39 +49,49 @@ namespace Escc.Umbraco.MediaSync
         /// <param name="node">The content node.</param>
         public void CreateRelatedMediaNode(IContent node)
         {
-            int contentRoot = String.IsNullOrWhiteSpace(_config.ReadSetting("syncFromContentRootNode")) ? -1 : Convert.ToInt32(_config.ReadSetting("syncFromContentRootNode"));
-            int mediaParent = String.IsNullOrWhiteSpace(_config.ReadSetting("syncToMediaRootNode")) ? -1 : Convert.ToInt32(_config.ReadSetting("syncToMediaRootNode"));
-
-            IContent contentRootNode = uMediaSyncHelper.contentService.GetById(contentRoot);
-
-            if (contentRoot == -1 || node.Path.Contains(contentRootNode.Path))
+            IMedia media = null;
+            try
             {
-                if (_config.SyncNode(node))
+                int contentRoot = String.IsNullOrWhiteSpace(_config.ReadSetting("syncFromContentRootNode")) ? -1 : Convert.ToInt32(_config.ReadSetting("syncFromContentRootNode"));
+                int mediaParent = String.IsNullOrWhiteSpace(_config.ReadSetting("syncToMediaRootNode")) ? -1 : Convert.ToInt32(_config.ReadSetting("syncToMediaRootNode"));
+
+                IContent contentRootNode = uMediaSyncHelper.contentService.GetById(contentRoot);
+
+                if (contentRoot == -1 || node.Path.Contains(contentRootNode.Path))
                 {
-                    if (node.ParentId != contentRoot)
+                    if (_config.SyncNode(node))
                     {
-                        IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(node.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                        IRelation uMediaSyncRelation = uMediaSyncRelationsBefore.FirstOrDefault();
-
-                        if (uMediaSyncRelation == null && Boolean.Parse(_config.ReadSetting("checkForMissingRelations")))
+                        if (node.ParentId != contentRoot)
                         {
-                            // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
-                            CreateRelatedMediaNode(node.Parent());
+                            IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(node.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                            IRelation uMediaSyncRelation = uMediaSyncRelationsBefore.FirstOrDefault();
 
-                            // get the new relation for the parent
-                            IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(node.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                            uMediaSyncRelation = uMediaSyncRelationsAfter.FirstOrDefault();
+                            if (uMediaSyncRelation == null && Boolean.Parse(_config.ReadSetting("checkForMissingRelations")))
+                            {
+                                // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
+                                CreateRelatedMediaNode(node.Parent());
+
+                                // get the new relation for the parent
+                                IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(node.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                                uMediaSyncRelation = uMediaSyncRelationsAfter.FirstOrDefault();
+                            }
+
+                            if (uMediaSyncRelation != null) mediaParent = uMediaSyncRelation.ChildId;
                         }
 
-                        if (uMediaSyncRelation != null) mediaParent = uMediaSyncRelation.ChildId;
+                        media = uMediaSyncHelper.mediaService.CreateMedia(node.Name, mediaParent, "Folder", uMediaSyncHelper.userId);
+                        uMediaSyncHelper.mediaService.Save(media);
+                        EnsureRelationTypeExists();
+                        IRelation relation = uMediaSyncHelper.relationService.Relate(node, media, Constants.FolderRelationTypeAlias);
+                        uMediaSyncHelper.relationService.Save(relation);
                     }
-
-                    IMedia media = uMediaSyncHelper.mediaService.CreateMedia(node.Name, mediaParent, "Folder", uMediaSyncHelper.userId);
-                    uMediaSyncHelper.mediaService.Save(media);
-                    EnsureRelationTypeExists();
-                    IRelation relation = uMediaSyncHelper.relationService.Relate(node, media, Constants.FolderRelationTypeAlias);
-                    uMediaSyncHelper.relationService.Save(relation);
                 }
+            }
+            catch (Exception ex)
+            {
+                ex.Data.Add("Content node id", node.Id);
+                ex.Data.Add("Media node id", media?.Id);
+                throw;
             }
         }
         /// <summary>
@@ -82,34 +100,52 @@ namespace Escc.Umbraco.MediaSync
         /// <param name="contentNode">The content node.</param>
         public void MoveRelatedMediaNode(IContent contentNode)
         {
-            IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(contentNode.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-            IRelation uMediaSyncRelation = uMediaSyncRelationsBefore.FirstOrDefault();
-            if (uMediaSyncRelation != null)
+            int? mediaId = null;
+            int? mediaParentNewId = null;
+            try
             {
-                int mediaId = uMediaSyncRelation.ChildId;
-
-                IEnumerable<IRelation> uMediaSyncRelationsNew = uMediaSyncHelper.relationService.GetByParentId(contentNode.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                IRelation uMediaSyncRelationNew = uMediaSyncRelationsNew.FirstOrDefault();
-
-                if (uMediaSyncRelationNew == null && _config.ReadBooleanSetting("checkForMissingRelations"))
+                IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(contentNode.Id).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                IRelation uMediaSyncRelation = uMediaSyncRelationsBefore.FirstOrDefault();
+                if (uMediaSyncRelation != null)
                 {
-                    // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
-                    CreateRelatedMediaNode(contentNode.Parent());
+                    mediaId = uMediaSyncRelation.ChildId;
 
-                    // get the new relation for the parent
-                    IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(contentNode.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                    uMediaSyncRelationNew = uMediaSyncRelationsAfter.FirstOrDefault();
+                    IEnumerable<IRelation> uMediaSyncRelationsNew = uMediaSyncHelper.relationService.GetByParentId(contentNode.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                    IRelation uMediaSyncRelationNew = uMediaSyncRelationsNew.FirstOrDefault();
+
+                    if (uMediaSyncRelationNew == null && _config.ReadBooleanSetting("checkForMissingRelations"))
+                    {
+                        // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
+                        CreateRelatedMediaNode(contentNode.Parent());
+
+                        // get the new relation for the parent
+                        IEnumerable<IRelation> uMediaSyncRelationsAfter = uMediaSyncHelper.relationService.GetByParentId(contentNode.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                        uMediaSyncRelationNew = uMediaSyncRelationsAfter.FirstOrDefault();
+                    }
+
+                    if (uMediaSyncRelationNew != null)
+                    {
+                        mediaParentNewId = uMediaSyncRelationNew.ChildId;
+
+                        IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId.Value);
+                        IMedia mediaParentNew = uMediaSyncHelper.mediaService.GetById(mediaParentNewId.Value);
+
+                        uMediaSyncHelper.mediaService.Move(media, mediaParentNew.Id, uMediaSyncHelper.userId);
+                    }
                 }
-
-                if (uMediaSyncRelationNew != null)
+            }
+            catch (Exception ex)
+            {
+                ex.Data.Add("Content node id", contentNode.Id);
+                if (mediaId.HasValue)
                 {
-                    int mediaParentNewId = uMediaSyncRelationNew.ChildId;
-
-                    IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
-                    IMedia mediaParentNew = uMediaSyncHelper.mediaService.GetById(mediaParentNewId);
-
-                    uMediaSyncHelper.mediaService.Move(media, mediaParentNew.Id, uMediaSyncHelper.userId);
+                    ex.Data.Add("Media node id", mediaId.Value);
                 }
+                if (mediaParentNewId.HasValue)
+                {
+                    ex.Data.Add("New parent media node id", mediaParentNewId.Value);
+                }
+                throw;
             }
         }
 
@@ -119,29 +155,42 @@ namespace Escc.Umbraco.MediaSync
         /// <param name="contentNodeId">The content node identifier.</param>
         public void MoveRelatedMediaNodeToRecycleBin(int contentNodeId)
         {
-            IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(contentNodeId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-            IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
-            if (uMediaSyncRelation != null)
+            int? mediaId = null;
+            try
             {
-                int mediaId = uMediaSyncRelation.ChildId;
-                IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
-
-                // Check - does this media folder have another associated content node? It shouldn't, because it should be a one-to-one relationship, 
-                // but it is possible somehow to get into a situation where it does. If there's another content node related to this media folder, just
-                // remove the relationship to the content node being trashed. 
-                var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                if (contentRelatedToMedia.Count() > 1)
+                IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(contentNodeId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
+                if (uMediaSyncRelation != null)
                 {
-                    uMediaSyncHelper.relationService.Delete(uMediaSyncRelation);
-                }
-                else
-                {
-                    // If all is normal and there's just one relationship, move any files that have a relationship with another content node, 
-                    // then move the media folder to the media recycle bin as the content node moves to the content recycle bin.
-                    MoveFilesInFolderIfStillInUse(contentNodeId, media);
+                    mediaId = uMediaSyncRelation.ChildId;
+                    IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId.Value);
 
-                    uMediaSyncHelper.mediaService.MoveToRecycleBin(media, uMediaSyncHelper.userId);
+                    // Check - does this media folder have another associated content node? It shouldn't, because it should be a one-to-one relationship, 
+                    // but it is possible somehow to get into a situation where it does. If there's another content node related to this media folder, just
+                    // remove the relationship to the content node being trashed. 
+                    var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId.Value).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                    if (contentRelatedToMedia.Count() > 1)
+                    {
+                        uMediaSyncHelper.relationService.Delete(uMediaSyncRelation);
+                    }
+                    else
+                    {
+                        // If all is normal and there's just one relationship, move any files that have a relationship with another content node, 
+                        // then move the media folder to the media recycle bin as the content node moves to the content recycle bin.
+                        MoveFilesInFolderIfStillInUse(contentNodeId, media);
+
+                        uMediaSyncHelper.mediaService.MoveToRecycleBin(media, uMediaSyncHelper.userId);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                ex.Data.Add("Content node id", contentNodeId);
+                if (mediaId.HasValue)
+                {
+                    ex.Data.Add("Media node id", mediaId.Value);
+                }
+                throw;
             }
         }
 
@@ -151,16 +200,19 @@ namespace Escc.Umbraco.MediaSync
         /// <param name="contentNodeId">The content node identifier.</param>
         public void DeleteRelatedMediaNode(int contentNodeId)
         {
+            int? mediaId = null;
+            try
+            { 
             IEnumerable<IRelation> uMediaSyncRelations = uMediaSyncHelper.relationService.GetByParentId(contentNodeId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
             IRelation uMediaSyncRelation = uMediaSyncRelations.FirstOrDefault();
             if (uMediaSyncRelation != null)
             {
-                int mediaId = uMediaSyncRelation.ChildId;
-                IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId);
+                mediaId = uMediaSyncRelation.ChildId;
+                IMedia media = uMediaSyncHelper.mediaService.GetById(mediaId.Value);
 
                 // Check - does this media folder have another associated content node? It shouldn't, because it should be a one-to-one relationship, 
                 // but it is possible somehow to get into a situation where it does. 
-                var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias && r.ParentId != contentNodeId);
+                var contentRelatedToMedia = uMediaSyncHelper.relationService.GetByChildId(mediaId.Value).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias && r.ParentId != contentNodeId);
                 var nextContentRelation = contentRelatedToMedia.FirstOrDefault();
                 if (nextContentRelation != null)
                 {
@@ -180,40 +232,65 @@ namespace Escc.Umbraco.MediaSync
                     uMediaSyncHelper.mediaService.Delete(media, uMediaSyncHelper.userId);
                 }
             }
+            }
+            catch (Exception ex)
+            {
+                ex.Data.Add("Content node id", contentNodeId);
+                if (mediaId.HasValue)
+                {
+                    ex.Data.Add("Media node id", mediaId.Value);
+                }
+                throw;
+            }
         }
 
 
         private void MoveFilesInFolderIfStillInUse(int contentNodeId, IMedia folder)
         {
-            var decendants = uMediaSyncHelper.mediaService.GetDescendants(folder);
-            foreach (var mediaItem in decendants)
+            int? mediaParentNewId = null;
+            try
             {
-                if (mediaItem.ContentType.Alias.ToUpperInvariant() == "FOLDER") continue;
-
-                // Check whether another page uses this media item. Could be more than one but just grab the first - we have no way of working out which is the "most appropriate".
-                var anotherPageUsingThisMediaItem = uMediaSyncHelper.relationService.GetByChildId(mediaItem.Id)
-                    .FirstOrDefault(r => r.RelationType.Alias == Constants.FileRelationTypeAlias && r.ParentId != contentNodeId);
-
-                if (anotherPageUsingThisMediaItem != null)
+                var decendants = uMediaSyncHelper.mediaService.GetDescendants(folder);
+                foreach (var mediaItem in decendants)
                 {
-                    // Look up media folder for that page
-                    var mediaFolderForPage = uMediaSyncHelper.relationService.GetByParentId(anotherPageUsingThisMediaItem.ParentId).FirstOrDefault(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
-                    if (mediaFolderForPage == null && _config.ReadBooleanSetting("checkForMissingRelations"))
+                    if (mediaItem.ContentType.Alias.ToUpperInvariant() == "FOLDER") continue;
+
+                    // Check whether another page uses this media item. Could be more than one but just grab the first - we have no way of working out which is the "most appropriate".
+                    var anotherPageUsingThisMediaItem = uMediaSyncHelper.relationService.GetByChildId(mediaItem.Id)
+                        .FirstOrDefault(r => r.RelationType.Alias == Constants.FileRelationTypeAlias && r.ParentId != contentNodeId);
+
+                    if (anotherPageUsingThisMediaItem != null)
                     {
-                        // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
-                        var contentNode = uMediaSyncHelper.contentService.GetById(anotherPageUsingThisMediaItem.ParentId);
-                        CreateRelatedMediaNode(contentNode);
+                        // Look up media folder for that page
+                        var mediaFolderForPage = uMediaSyncHelper.relationService.GetByParentId(anotherPageUsingThisMediaItem.ParentId).FirstOrDefault(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                        if (mediaFolderForPage == null && _config.ReadBooleanSetting("checkForMissingRelations"))
+                        {
+                            // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
+                            var contentNode = uMediaSyncHelper.contentService.GetById(anotherPageUsingThisMediaItem.ParentId);
+                            CreateRelatedMediaNode(contentNode);
 
-                        mediaFolderForPage = uMediaSyncHelper.relationService.GetByParentId(anotherPageUsingThisMediaItem.ParentId).FirstOrDefault(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                            mediaFolderForPage = uMediaSyncHelper.relationService.GetByParentId(anotherPageUsingThisMediaItem.ParentId).FirstOrDefault(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
+                        }
+
+                        // Move the media item to the media folder for the other page, so that it doesn't get deleted
+                        if (mediaFolderForPage != null)
+                        {
+                            mediaParentNewId = mediaFolderForPage.ChildId;
+                            uMediaSyncHelper.mediaService.Move(mediaItem, mediaParentNewId.Value);
+                        }
+
                     }
-
-                    // Move the media item to the media folder for the other page, so that it doesn't get deleted
-                    if (mediaFolderForPage != null)
-                    {
-                        uMediaSyncHelper.mediaService.Move(mediaItem, mediaFolderForPage.ChildId);
-                    }
-
                 }
+            }
+            catch (Exception ex)
+            {
+                ex.Data.Add("Content node id", contentNodeId);
+                ex.Data.Add("Media folder id", folder.Id);
+                if (mediaParentNewId.HasValue)
+                {
+                    ex.Data.Add("New parent media node id", mediaParentNewId.Value);
+                }
+                throw;
             }
         }
 
