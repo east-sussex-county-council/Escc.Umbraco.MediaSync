@@ -12,6 +12,5 @@ namespace Escc.Umbraco.MediaSync
         string ReadSetting(string key);
         bool ReadBooleanSetting(string key);
         bool SyncNode(IContent content);
-        IEnumerable<string> ReadPropertyEditorAliases(string mediaIdProvider);
     }
 }

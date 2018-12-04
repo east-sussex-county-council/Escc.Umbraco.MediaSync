@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Escc.Umbraco.Media;
 using Umbraco.Core;
 using Umbraco.Core.Events;
 using Umbraco.Core.Models;
@@ -15,7 +16,7 @@ namespace Escc.Umbraco.MediaSync
     public class MediaFileSync : ApplicationEventHandler
     {
         private readonly IMediaSyncConfigurationProvider _config = new MediaSyncConfigurationFromXml();
-        private IEnumerable<IRelatedMediaIdProvider> _mediaIdProviders;
+        private IEnumerable<IMediaIdProvider> _mediaIdProviders;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MediaFileSync"/> class.
@@ -40,13 +41,7 @@ namespace Escc.Umbraco.MediaSync
 
                 if (_mediaIdProviders == null)
                 {
-                    _mediaIdProviders = new List<IRelatedMediaIdProvider>() {
-                        new MediaPickerIdProvider(_config, ApplicationContext.Current.Services.DataTypeService), 
-                        new HtmlMediaIdProvider(_config), 
-                        new GridHtmlMediaIdProvider(_config),
-                        new RelatedLinksMediaIdProvider(_config),
-                        new UrlMediaIdProvider(_config)
-                    };
+                    _mediaIdProviders = new MediaIdProvidersFromConfig(ApplicationContext.Current.Services.MediaService, ApplicationContext.Current.Services.DataTypeService).LoadProviders();
                 }
 
                 foreach (var node in e.SavedEntities)

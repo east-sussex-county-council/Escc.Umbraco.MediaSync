@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using Umbraco.Core.Models;
-using umbraco.presentation.channels.businesslogic;
 
 namespace Escc.Umbraco.MediaSync
 {
@@ -80,37 +79,6 @@ namespace Escc.Umbraco.MediaSync
                 return null;
             }
 
-        }
-
-        /// <summary>
-        /// Reads property editor aliases compatible with the given media id provider.
-        /// </summary>
-        /// <param name="mediaIdProvider">The name of the mediaIdProvider element in the configuration file.</param>
-        /// <returns></returns>
-        public IEnumerable<string> ReadPropertyEditorAliases(string mediaIdProvider)
-        {
-            XmlDocument doc = new XmlDocument();
-            doc.Load(uMediaSyncHelper.configFile);
-
-            var propertyEditorAliases = new List<string>();
-
-            foreach (XmlNode node in doc.DocumentElement.ChildNodes)
-            {
-                if (node.Name == "mediaIdProviders")
-                {
-                    foreach (XmlNode subNode in node.ChildNodes)
-                    {
-                        if (subNode.Name == mediaIdProvider)
-                        {
-                            foreach (XmlNode propertyEditorNode in subNode.ChildNodes)
-                            {
-                                propertyEditorAliases.Add(propertyEditorNode.InnerText.ToUpperInvariant());
-                            }
-                        }
-                    }
-                }
-            }
-            return propertyEditorAliases;
         }
 
         /// <summary>
