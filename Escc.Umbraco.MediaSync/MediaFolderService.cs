@@ -37,7 +37,10 @@ namespace Escc.Umbraco.MediaSync
             }
             catch (Exception ex)
             {
-                ex.Data.Add("Content node id", node.Id);
+                if (!ex.Data.Contains("Content node id"))
+                {
+                    ex.Data.Add("Content node id", node.Id);
+                }
                 throw;
             }
         }
@@ -89,8 +92,14 @@ namespace Escc.Umbraco.MediaSync
             }
             catch (Exception ex)
             {
-                ex.Data.Add("Content node id", node.Id);
-                ex.Data.Add("Media node id", media?.Id);
+                if (!ex.Data.Contains("Content node id"))
+                {
+                    ex.Data.Add("Content node id", node.Id);
+                }
+                if (!ex.Data.Contains("Media node id"))
+                {
+                    ex.Data.Add("Media node id", media?.Id);
+                }
                 throw;
             }
         }
@@ -136,12 +145,15 @@ namespace Escc.Umbraco.MediaSync
             }
             catch (Exception ex)
             {
-                ex.Data.Add("Content node id", contentNode.Id);
-                if (mediaId.HasValue)
+                if (!ex.Data.Contains("Content node id"))
+                {
+                    ex.Data.Add("Content node id", contentNode.Id);
+                }
+                if (!ex.Data.Contains("Media node id") && mediaId.HasValue)
                 {
                     ex.Data.Add("Media node id", mediaId.Value);
                 }
-                if (mediaParentNewId.HasValue)
+                if (!ex.Data.Contains("New parent media node id") && mediaParentNewId.HasValue)
                 {
                     ex.Data.Add("New parent media node id", mediaParentNewId.Value);
                 }
@@ -185,8 +197,11 @@ namespace Escc.Umbraco.MediaSync
             }
             catch (Exception ex)
             {
-                ex.Data.Add("Content node id", contentNodeId);
-                if (mediaId.HasValue)
+                if (!ex.Data.Contains("Content node id"))
+                {
+                    ex.Data.Add("Content node id", contentNodeId);
+                }
+                if (!ex.Data.Contains("Media node id") && mediaId.HasValue)
                 {
                     ex.Data.Add("Media node id", mediaId.Value);
                 }
@@ -235,8 +250,11 @@ namespace Escc.Umbraco.MediaSync
             }
             catch (Exception ex)
             {
-                ex.Data.Add("Content node id", contentNodeId);
-                if (mediaId.HasValue)
+                if (!ex.Data.Contains("Content node id"))
+                {
+                    ex.Data.Add("Content node id", contentNodeId);
+                }
+                if (!ex.Data.Contains("Media node id") && mediaId.HasValue)
                 {
                     ex.Data.Add("Media node id", mediaId.Value);
                 }
@@ -284,9 +302,15 @@ namespace Escc.Umbraco.MediaSync
             }
             catch (Exception ex)
             {
-                ex.Data.Add("Content node id", contentNodeId);
-                ex.Data.Add("Media folder id", folder.Id);
-                if (mediaParentNewId.HasValue)
+                if (!ex.Data.Contains("Content node id"))
+                {
+                    ex.Data.Add("Content node id", contentNodeId);
+                }
+                if (!ex.Data.Contains("Media node id"))
+                {
+                    ex.Data.Add("Media folder id", folder.Id);
+                }
+                if (!ex.Data.Contains("New parent media node id") && mediaParentNewId.HasValue)
                 {
                     ex.Data.Add("New parent media node id", mediaParentNewId.Value);
                 }
