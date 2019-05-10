@@ -69,7 +69,7 @@ namespace Escc.Umbraco.MediaSync
                             IEnumerable<IRelation> uMediaSyncRelationsBefore = uMediaSyncHelper.relationService.GetByParentId(node.ParentId).Where(r => r.RelationType.Alias == Constants.FolderRelationTypeAlias);
                             IRelation uMediaSyncRelation = uMediaSyncRelationsBefore.FirstOrDefault();
 
-                            if (uMediaSyncRelation == null && Boolean.Parse(_config.ReadSetting("checkForMissingRelations")))
+                            if (uMediaSyncRelation == null && Boolean.Parse(_config.ReadSetting("checkForMissingRelations")) && node.ParentId > 0)
                             {
                                 // parent node doesn't have a media folder yet, probably because uMediaSync was installed after the node was created
                                 CreateRelatedMediaNode(node.Parent());

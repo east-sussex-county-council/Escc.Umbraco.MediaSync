@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Escc.Umbraco.Media;
+using Exceptionless;
 using Umbraco.Core;
 using Umbraco.Core.Events;
 using Umbraco.Core.Models;
@@ -23,8 +24,8 @@ namespace Escc.Umbraco.MediaSync
         /// </summary>
         public MediaFileSync()
         {
-             ContentService.Saved += ContentService_Saved;
-             ContentService.Copied += ContentService_Copied;
+            ContentService.Saved += ContentService_Saved;
+            ContentService.Copied += ContentService_Copied;
         }
 
 
@@ -35,21 +36,30 @@ namespace Escc.Umbraco.MediaSync
         /// <param name="e">The e.</param>
         private void ContentService_Saved(IContentService sender, SaveEventArgs<IContent> e)
         {
-            if (_config.ReadBooleanSetting("moveMediaFilesStillInUse"))
+            try
             {
-                EnsureRelationTypeExists();
-
-                if (_mediaIdProviders == null)
+                if (_config.ReadBooleanSetting("moveMediaFilesStillInUse"))
                 {
-                    _mediaIdProviders = new MediaIdProvidersFromConfig(ApplicationContext.Current.Services.MediaService, ApplicationContext.Current.Services.DataTypeService).LoadProviders();
-                }
+                    EnsureRelationTypeExists();
 
-                foreach (var node in e.SavedEntities)
-                {
-                    UpdateRelationsBetweenContentAndMediaItems(node);
+                    if (_mediaIdProviders == null)
+                    {
+                        _mediaIdProviders = new MediaIdProvidersFromConfig(ApplicationContext.Current.Services.MediaService, ApplicationContext.Current.Services.DataTypeService).LoadProviders();
+                    }
+
+                    foreach (var node in e.SavedEntities)
+                    {
+                        UpdateRelationsBetweenContentAndMediaItems(node);
+                    }
                 }
             }
-       }
+            catch (Exception ex)
+            {
+                ex.ToExceptionless().Submit();
+                throw; // throw to the generic handler that writes to the Umbraco log
+            }
+
+        }
 
 
         /// <summary>
@@ -60,16 +70,25 @@ namespace Escc.Umbraco.MediaSync
         /// <exception cref="System.NotImplementedException"></exception>
         void ContentService_Copied(IContentService sender, CopyEventArgs<IContent> e)
         {
-            if (_config.ReadBooleanSetting("moveMediaFilesStillInUse"))
+            try
             {
-                var fileRelations = uMediaSyncHelper.relationService.GetByParent(e.Original).Where(r => r.RelationType.Alias == Constants.FileRelationTypeAlias);
-                foreach (var relation in fileRelations)
+                if (_config.ReadBooleanSetting("moveMediaFilesStillInUse"))
                 {
-                    var media = uMediaSyncHelper.mediaService.GetById(relation.ChildId);
-                    var newRelation = uMediaSyncHelper.relationService.Relate(e.Copy, media, Constants.FileRelationTypeAlias);
-                    uMediaSyncHelper.relationService.Save(newRelation);
+                    var fileRelations = uMediaSyncHelper.relationService.GetByParent(e.Original).Where(r => r.RelationType.Alias == Constants.FileRelationTypeAlias);
+                    foreach (var relation in fileRelations)
+                    {
+                        var media = uMediaSyncHelper.mediaService.GetById(relation.ChildId);
+                        var newRelation = uMediaSyncHelper.relationService.Relate(e.Copy, media, Constants.FileRelationTypeAlias);
+                        uMediaSyncHelper.relationService.Save(newRelation);
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                ex.ToExceptionless().Submit();
+                throw; // throw to the generic handler that writes to the Umbraco log
+            }
+
         }
 
         private void UpdateRelationsBetweenContentAndMediaItems(IContent node)
@@ -118,7 +137,7 @@ namespace Escc.Umbraco.MediaSync
                             }
                         }
                     }
-                    
+
                 }
             }
 
@@ -165,7 +184,7 @@ namespace Escc.Umbraco.MediaSync
                 // Check that the media item for the first relation is in the correct folder
                 var relation = relations.First();
                 var mediaItemParentFolder = uMediaSyncHelper.mediaService.GetParent(relation.ChildId);
-                    
+
                 // If the media item is at the root, GetParent seems to return null rather than the Media Root node which has an id of -1
                 if (mediaItemParentFolder != null)
                 {
