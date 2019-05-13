@@ -95,6 +95,12 @@ Pages can be added to a blacklist in `uMediaSync.config`:
 
 There is another way to exclude individual single content nodes or even the whole branches from synchronization. Add a property with alias `uMediaSyncHide` of datatype `true/false` to your document type. If you select this property on a content node, this and all nodes under this are automatically excluded from synchronization.
 
+## Tracking media usage
+
+Create a new data type called 'Media Content Usage' using the `Escc.MediaContentUsage` property editor installed with this package. Then add a 'Media Content Usage' property with the alias `MediaContentUsage` to the `File` and `Image` media types that come with Umbraco.
+
+When a `File` or `Image` is viewed in the back office, the property editor code will call `MediaUsageApiController` and use the relations tracked by this package to show the content nodes where the media item is used.
+
 ## Known issues
 
 * When you copy a content node which has child nodes, you get multiple copies of the media folder, only one of which has the correct relationship.
