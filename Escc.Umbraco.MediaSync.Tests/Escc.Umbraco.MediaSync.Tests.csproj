@@ -215,12 +215,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ExampleValues.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ExampleValues.resx</DependentUpon>
-    </Compile>
-    <Compile Include="GridHtmlMediaIdProviderTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestMediaConfiguration.cs" />
   </ItemGroup>
@@ -233,12 +227,6 @@
       <Project>{c1f5aa94-e582-414c-9c15-87a5fd9ac54d}</Project>
       <Name>Escc.Umbraco.MediaSync</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="ExampleValues.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ExampleValues.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
